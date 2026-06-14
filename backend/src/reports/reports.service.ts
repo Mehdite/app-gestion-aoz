@@ -139,7 +139,7 @@ export class ReportsService {
     // Total row
     const totalRow = sheet.addRow({
       contractNumber: 'TOTAL',
-      primeTTC: Number(report.summary.totalPrimeTTC),
+      primeTTC: Number(report.meta.summary.totalPrimeTTC),
     });
     totalRow.font = { bold: true };
 
