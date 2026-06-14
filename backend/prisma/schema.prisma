@@ -1,0 +1,533 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite does not support enums or Json natively.
+// Enum values are stored as String. Json is stored as String (serialized).
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  role          String    @default("AGENT")   // ADMIN | MANAGER | ACCOUNTANT | AGENT
+  isActive      Boolean   @default(true)
+  refreshToken  String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  quotes        Quote[]
+  contracts     Contract[]
+  claims        Claim[]
+  tasks         Task[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  commissions   Commission[]
+  prospects     Prospect[]   @relation("AgentProspects")
+
+  @@map("users")
+}
+
+model Client {
+  id              String    @id @default(cuid())
+  type            String    // INDIVIDUAL | COMPANY
+  status          String    @default("ACTIVE")  // ACTIVE | INACTIVE | ARCHIVED
+  clientNumber    String    @unique
+
+  firstName       String?
+  lastName        String?
+  cin             String?   @unique
+  dateOfBirth     DateTime?
+
+  companyName     String?
+  ice             String?   @unique
+  rc              String?
+  taxId           String?
+
+  email           String?
+  phone           String
+  phone2          String?
+  address         String?
+  city            String?
+  postalCode      String?
+  notes           String?
+  source          String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  archivedAt      DateTime?
+
+  quotes          Quote[]
+  contracts       Contract[]
+  claims          Claim[]
+  documents       Document[]
+  payments        Payment[]
+  notifications   Notification[]
+
+  @@index([cin])
+  @@index([ice])
+  @@index([phone])
+  @@map("clients")
+}
+
+model Prospect {
+  id          String    @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String
+  company     String?
+  source      String?
+  status      String    @default("NEW")  // NEW | CONTACTED | QUOTE_SENT | WON | LOST
+  notes       String?
+  lostReason  String?
+
+  agentId     String
+  agent       User      @relation("AgentProspects", fields: [agentId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  convertedAt DateTime?
+
+  tasks        Task[]
+  appointments Appointment[]
+
+  @@index([status])
+  @@map("prospects")
+}
+
+model Company {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  code         String    @unique
+  logo         String?
+  address      String?
+  phone        String?
+  email        String?
+  website      String?
+  contactName  String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products     CompanyProduct[]
+  contracts    Contract[]
+  commissions  Commission[]
+
+  @@map("companies")
+}
+
+model CompanyProduct {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  name            String
+  type            String    // AUTO | HOME | HEALTH | PROFESSIONAL | DECENNIAL | TRANSPORT | LIFE | OTHER
+  commissionRate  Decimal
+  description     String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  quotes          Quote[]
+  contracts       Contract[]
+
+  @@map("company_products")
+}
+
+model Quote {
+  id              String    @id @default(cuid())
+  quoteNumber     String    @unique
+  status          String    @default("DRAFT")  // DRAFT | SENT | ACCEPTED | REJECTED | EXPIRED | CONVERTED
+  type            String    // AUTO | HOME | HEALTH | ...
+
+  clientId        String
+  client          Client    @relation(fields: [clientId], references: [id])
+
+  productId       String?
+  product         CompanyProduct? @relation(fields: [productId], references: [id])
+
+  agentId         String
+  agent           User      @relation(fields: [agentId], references: [id])
+
+  primeTTC        Decimal
+  primeHT         Decimal
+  taxes           Decimal
+
+  validUntil      DateTime
+  effectiveDate   DateTime?
+
+  details         String?   // JSON serialized
+  notes           String?
+
+  sentAt          DateTime?
+  convertedAt     DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  contract        Contract?
+  documents       Document[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("quotes")
+}
+
+model Contract {
+  id                String    @id @default(cuid())
+  contractNumber    String    @unique
+  status            String    @default("ACTIVE")  // ACTIVE | EXPIRED | SUSPENDED | CANCELLED | PENDING_RENEWAL
+  type              String
+
+  clientId          String
+  client            Client    @relation(fields: [clientId], references: [id])
+
+  companyId         String
+  company           Company   @relation(fields: [companyId], references: [id])
+
+  productId         String?
+  product           CompanyProduct? @relation(fields: [productId], references: [id])
+
+  agentId           String
+  agent             User      @relation(fields: [agentId], references: [id])
+
+  quoteId           String?   @unique
+  quote             Quote?    @relation(fields: [quoteId], references: [id])
+
+  primeTTC          Decimal
+  primeHT           Decimal
+  taxes             Decimal
+  reduction         Decimal   @default(0)
+  primePaye         Decimal   @default(0)
+  frequency         String    @default("ANNUAL")  // MONTHLY | QUARTERLY | SEMI_ANNUAL | ANNUAL
+
+  effectiveDate     DateTime
+  expiryDate        DateTime
+  renewedAt         DateTime?
+  cancelledAt       DateTime?
+
+  details           String?   // JSON serialized
+  notes             String?
+  autoRenew         Boolean   @default(true)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  claims            Claim[]
+  documents         Document[]
+  payments          Payment[]
+  commissions       Commission[]
+  renewalAlerts     RenewalAlert[]
+  history           ContractHistory[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("contracts")
+}
+
+model ContractHistory {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id])
+  field       String
+  oldValue    String?
+  newValue    String?
+  changedBy   String
+  createdAt   DateTime @default(now())
+
+  @@map("contract_history")
+}
+
+model Claim {
+  id              String    @id @default(cuid())
+  claimNumber     String    @unique
+  status          String    @default("DECLARED")  // DECLARED | IN_PROGRESS | EXPERTISE | CLOSED | REJECTED
+
+  clientId        String
+  client          Client    @relation(fields: [clientId], references: [id])
+
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id])
+
+  agentId         String
+  agent           User      @relation(fields: [agentId], references: [id])
+
+  description     String
+  incidentDate    DateTime
+  declaredAt      DateTime  @default(now())
+
+  estimatedAmount Decimal?
+  indemnityAmount Decimal?
+
+  expertName      String?
+  expertiseDate   DateTime?
+  expertiseReport String?
+
+  closedAt        DateTime?
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  documents       Document[]
+
+  @@index([clientId])
+  @@index([contractId])
+  @@index([status])
+  @@map("claims")
+}
+
+model Commission {
+  id            String    @id @default(cuid())
+  contractId    String
+  contract      Contract  @relation(fields: [contractId], references: [id])
+
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+
+  agentId       String
+  agent         User      @relation(fields: [agentId], references: [id])
+
+  primeHT       Decimal
+  rate          Decimal
+  grossAmount   Decimal
+  netAmount     Decimal
+  deductions    Decimal   @default(0)
+
+  numQuittance  String?   @unique
+  period        String
+  paidAt        DateTime?
+  isPaid        Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([contractId])
+  @@index([period])
+  @@index([isPaid])
+  @@map("commissions")
+}
+
+model AccountingEntry {
+  id          String    @id @default(cuid())
+  type        String    // INCOME | EXPENSE
+  category    String
+  description String
+  amount      Decimal
+  date        DateTime
+  reference   String?
+  clientId    String?
+  contractId  String?
+  paymentId   String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@map("accounting_entries")
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  reference     String    @unique
+  status        String    @default("PENDING")  // PENDING | PAID | OVERDUE | CANCELLED | REFUNDED
+
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id])
+
+  contractId    String
+  contract      Contract  @relation(fields: [contractId], references: [id])
+
+  amount        Decimal
+  currency      String    @default("MAD")
+  method        String?
+
+  dueDate       DateTime
+  paidAt        DateTime?
+
+  gatewayRef    String?
+  gatewayData   String?   // JSON serialized
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([contractId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  type        String    // CONTRACT | QUOTE | CIN | CARTE_GRISE | ATTESTATION | EXPERTISE_REPORT | INVOICE | OTHER
+  name        String
+  description String?
+  url         String
+  size        Int?
+  mimeType    String?
+  ocrText     String?
+
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id])
+
+  contractId  String?
+  contract    Contract? @relation(fields: [contractId], references: [id])
+
+  quoteId     String?
+  quote       Quote?    @relation(fields: [quoteId], references: [id])
+
+  claimId     String?
+  claim       Claim?    @relation(fields: [claimId], references: [id])
+
+  uploadedBy  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([contractId])
+  @@map("documents")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  channel    String    // EMAIL | SMS | WHATSAPP | PUSH
+  recipient  String
+  subject    String?
+  content    String
+  isRead     Boolean   @default(false)
+  sentAt     DateTime?
+  readAt     DateTime?
+
+  clientId   String?
+  client     Client?   @relation(fields: [clientId], references: [id])
+
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+
+  createdAt  DateTime  @default(now())
+
+  @@index([clientId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model RenewalAlert {
+  id               String    @id @default(cuid())
+  contractId       String
+  contract         Contract  @relation(fields: [contractId], references: [id])
+  daysBeforeExpiry Int
+  sentAt           DateTime?
+  isSent           Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+
+  @@unique([contractId, daysBeforeExpiry])
+  @@map("renewal_alerts")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("TODO")  // TODO | IN_PROGRESS | DONE | CANCELLED
+  dueDate     DateTime?
+  priority    Int       @default(2)
+
+  assignedTo  String
+  user        User      @relation(fields: [assignedTo], references: [id])
+
+  prospectId  String?
+  prospect    Prospect? @relation(fields: [prospectId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([assignedTo])
+  @@index([status])
+  @@map("tasks")
+}
+
+model Appointment {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  location    String?
+
+  prospectId  String?
+  prospect    Prospect? @relation(fields: [prospectId], references: [id])
+
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("appointments")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entity     String
+  entityId   String?
+  oldValues  String?  // JSON serialized
+  newValues  String?  // JSON serialized
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model AgencySetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("agency_settings")
+}
+
+model Quittance {
+  id             String    @id @default(cuid())
+  numPolice      String
+  numQuittance   String    @unique
+  branche        String
+  assure         String
+  dateEffet      DateTime
+  dateExpiration DateTime
+  dateSituation  DateTime
+  primeNette     Decimal   @default(0)
+  primeTotale    Decimal
+  commission     Decimal   @default(0)
+  netCie         Decimal   @default(0)
+  moisImport     String    // ex: "0126", "0226"
+  status         String    @default("IMPAYE") // IMPAYE | ENCAISSE
+  paidAt         DateTime?
+  paidMethod     String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([numPolice])
+  @@index([status])
+  @@index([moisImport])
+  @@map("quittances")
+}

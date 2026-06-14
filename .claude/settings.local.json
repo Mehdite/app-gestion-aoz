@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Pc\\\\OneDrive\\\\Bureau\\\\APP GESTION\" -File)",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)",
+      "PowerShell(\\(Get-ChildItem -Recurse \"C:\\\\Users\\\\Pc\\\\OneDrive\\\\Bureau\\\\APP GESTION\" -File\\).Count)",
+      "PowerShell(winget --version 2>&1)",
+      "PowerShell(choco --version 2>&1)",
+      "Bash(npm install *)",
+      "PowerShell($logFile = \"C:\\\\Users\\\\Pc\\\\OneDrive\\\\Bureau\\\\APP GESTION\\\\frontend-dev.log\"; Clear-Content $logFile -ErrorAction SilentlyContinue; Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/c\", \"cd /d `\"C:\\\\Users\\\\Pc\\\\OneDrive\\\\Bureau\\\\APP GESTION\\\\frontend`\" && npm run dev >> `\"$logFile`\" 2>&1\" -WindowStyle Hidden; Write-Output \"Frontend restarted\")",
+      "Bash(npx tsc *)",
+      "Bash(npx ts-node -e ' *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3001/api/v1/health)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@assurancesoueedzem.ma\",\"password\":\"Admin@2024!\"}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Companies:', [c['name'] for c in d.get\\('data',[]\\)]\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/v1/auth/login -H 'Content-Type: application/json' -d '{\\\\\"email\\\\\":\\\\\"admin@assurancesoueedzem.ma\\\\\",\\\\\"password\\\\\":\\\\\"Admin@2024!\\\\\"}')",
+      "Bash(curl -s http://localhost:3001/api/v1/companies -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:3001/api/v1/auth/login -H 'Content-Type: application/json' -d '{\\\\\"email\\\\\":\\\\\"admin@assurancesoueedzem.ma\\\\\",\\\\\"password\\\\\":\\\\\"Admin@2024!\\\\\"}')",
+      "Bash(node -e \"const d=require\\('/tmp/login.json'\\); const t=d.data.accessToken; require\\('child_process'\\).execSync\\('curl -s http://localhost:3001/api/v1/companies -H \\\\\"Authorization: Bearer '+t+'\\\\\"', {stdio:'inherit'}\\)\")",
+      "PowerShell($login = Invoke-WebRequest -Uri \"http://localhost:3001/api/v1/auth/login\" -Method POST -ContentType \"application/json\" -Body '{\"email\":\"admin@assurancesoueedzem.ma\",\"password\":\"Admin@2024!\"}' -UseBasicParsing | ConvertFrom-Json; $token = $login.data.accessToken; $r = Invoke-WebRequest -Uri \"http://localhost:3001/api/v1/companies\" -Headers @{Authorization=\"Bearer $token\"} -UseBasicParsing | ConvertFrom-Json; Write-Host \"Companies in DB:\"; $r.data | ForEach-Object { Write-Host \"  -\" $_.name })",
+      "Bash(npx prisma *)",
+      "Bash(node -e \"require\\('xlsx'\\); console.log\\('xlsx OK'\\)\")",
+      "Bash(node -e \"require\\('@nestjs/platform-express'\\); require\\('multer'\\); console.log\\('multer OK'\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/v1/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@assurancesoueedzem.ma\\\\\",\\\\\"password\\\\\":\\\\\"Admin@2024!\\\\\"}\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const t=JSON.parse\\(d\\).data.accessToken; require\\('child_process'\\).exec\\('curl -s http://localhost:3001/api/v1/payments?limit=5 -H \\\\\"Authorization: Bearer '+t+'\\\\\"', \\(e,o\\)=>console.log\\('payments:',o.substring\\(0,200\\)\\)\\); require\\('child_process'\\).exec\\('curl -s http://localhost:3001/api/v1/accounting?limit=5 -H \\\\\"Authorization: Bearer '+t+'\\\\\"', \\(e,o\\)=>console.log\\('accounting:',o.substring\\(0,200\\)\\)\\);}\\);\")",
+      "Bash(grep -A 30 \"model Payment\" \"/mnt/c/Users/Pc/OneDrive/Bureau/APP GESTION/backend/prisma/schema.prisma\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@assurances-oz.ma\",\"password\":\"Admin123!\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('data',{}\\).get\\('accessToken','ERREUR'\\)[:50] if 'data' in d else d\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@assurances-oz.ma\",\"password\":\"Admin123!\"}')",
+      "Bash(curl -s http://localhost:3001/)",
+      "Bash(curl -s http://localhost:3001/health)"
+    ]
+  }
+}

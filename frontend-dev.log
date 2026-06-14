@@ -1,0 +1,124 @@
+
+> assurances-oued-zem-frontend@1.0.0 dev
+> next dev -p 3000 --turbo
+
+  ▲ Next.js 14.2.35 (turbo)
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 3.6s
+ ○ Compiling /login ...
+ ✓ Compiled /login in 9.6s
+ GET /login 200 in 10124ms
+ GET /login 200 in 589ms
+ ✓ Compiled in 515ms
+ ✓ Compiled in 541ms
+ ✓ Compiled in 392ms
+ ✓ Compiled in 693ms
+ ✓ Compiled in 405ms
+ ✓ Compiled in 579ms
+ ✓ Compiled in 351ms
+ ✓ Compiled in 350ms
+ ✓ Compiled in 672ms
+ ✓ Compiled in 296ms
+ ✓ Compiled in 274ms
+ ✓ Compiled in 475ms
+ ○ Compiling / ...
+ ✓ Compiled / in 741ms
+ GET / 307 in 1108ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 6.3s
+ GET /dashboard 200 in 6807ms
+ ✓ Compiled /login in 367ms
+ GET /login 200 in 1358ms
+ ○ Compiling /contrats ...
+ ✓ Compiled /contrats in 973ms
+ ○ Compiling /contrats/nouveau ...
+ ✓ Compiled /contrats/nouveau in 742ms
+ ○ Compiling /commissions ...
+ ✓ Compiled /commissions in 2.9s
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 935ms
+ GET /comptabilite 404 in 739ms
+ GET /dashboard 200 in 802ms
+ GET /paiements 404 in 424ms
+ GET /dashboard 200 in 519ms
+ ✓ Compiled in 23ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled in 788ms
+ ✓ Compiled /dashboard in 1612ms
+ ✓ Compiled in 151ms
+ ✓ Compiled /dashboard in 148ms
+ ✓ Compiled in 8ms
+ ✓ Compiled in 0ms
+ ✓ Compiled /dashboard in 134ms
+ ✓ Compiled in 307ms
+ ✓ Compiled /dashboard in 375ms
+ ✓ Compiled in 2ms
+ ✓ Compiled in 2ms
+ ✓ Compiled /dashboard in 180ms
+ ✓ Compiled / in 185ms
+ GET / 307 in 581ms
+ ✓ Compiled /login in 225ms
+ GET /login 200 in 1442ms
+ ✓ Compiled /contrats in 252ms
+ ✓ Compiled /contrats/nouveau in 438ms
+ ○ Compiling /clients ...
+ ✓ Compiled /clients in 2.3s
+ GET /login 200 in 2100ms
+ ✓ Compiled in 484ms
+ ✓ Compiled /login in 288ms
+ ✓ Compiled in 3ms
+ ✓ Compiled in 519ms
+ ✓ Compiled /login in 239ms
+ ✓ Compiled in 521ms
+ ✓ Compiled /login in 176ms
+ ✓ Compiled in 337ms
+ ✓ Compiled /login in 223ms
+ ✓ Compiled in 616ms
+ ✓ Compiled /login in 189ms
+ ✓ Compiled in 242ms
+ ✓ Compiled /login in 212ms
+ ✓ Compiled / in 435ms
+ GET / 307 in 898ms
+ ✓ Compiled /dashboard in 320ms
+ GET /dashboard 200 in 1406ms
+ ✓ Compiled /contrats in 321ms
+ ✓ Compiled in 3.3s
+ ✓ Compiled /contrats in 204ms
+ ✓ Compiled in 1545ms
+ ○ Compiling /contrats ...
+ ✓ Compiled /contrats in 626ms
+ GET /contrats 200 in 2015ms
+ ✓ Compiled /login in 207ms
+ GET /login 200 in 866ms
+ ✓ Compiled /dashboard in 171ms
+ ○ Compiling /rapports ...
+ ✓ Compiled /rapports in 4.1s
+ ✓ Compiled /_not-found/page in 79ms
+ GET /paiements 404 in 330ms
+ GET /rapports 200 in 596ms
+ GET /comptabilite 404 in 364ms
+ GET /rapports 200 in 410ms
+ GET /documents 404 in 306ms
+ GET /rapports 200 in 597ms
+ ✓ Compiled /commissions in 147ms
+ GET /compagnies 404 in 288ms
+ GET /commissions 200 in 725ms
+ ○ Compiling /sinistres ...
+ ✓ Compiled /sinistres in 753ms
+ ✓ Compiled in 1507ms
+ ✓ Compiled in 868ms
+ ✓ Compiled /sinistres in 560ms
+ GET /sinistres 200 in 7782ms
+ ✓ Compiled in 4.8s
+ ✓ Compiled /sinistres in 217ms
+ ✓ Compiled in 3.2s
+ ✓ Compiled /sinistres in 283ms
+ ✓ Compiled in 218ms
+ ✓ Compiled /sinistres in 156ms
+ ✓ Compiled /login in 198ms
+ GET /login 200 in 908ms
+ ✓ Compiled /dashboard in 423ms
+ ○ Compiling /paiements ...
+ ✓ Compiled /paiements in 1056ms
