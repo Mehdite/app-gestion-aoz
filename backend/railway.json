@@ -1,7 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "deploy": {
-    "startCommand": "npx prisma db push --accept-data-loss && npm run start:prod",
+    "startCommand": "npx prisma db push --accept-data-loss && echo '=== STARTING APP ===' && node dist/main 2>&1 || (echo '=== APP CRASHED ===' && sleep 60)",
     "restartPolicyType": "ON_FAILURE"
   }
 }
