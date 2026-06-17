@@ -274,10 +274,6 @@ export class ContractsService {
         errors.push(`Ligne ${rowNum}: Type assurance invalide "${typeAssurance}"`);
         continue;
       }
-      if (!telephone || telephone.length < 10) {
-        errors.push(`Ligne ${rowNum}: Téléphone manquant ou invalide`);
-        continue;
-      }
       const primeTTC = parseFloat(primeTTCRaw.replace(',', '.'));
       if (isNaN(primeTTC) || primeTTC <= 0) {
         errors.push(`Ligne ${rowNum}: Prime TTC invalide "${primeTTCRaw}"`);
@@ -314,18 +310,23 @@ export class ContractsService {
       const clientType = typeClient.toUpperCase() === 'COMPANY' ? 'COMPANY' : 'INDIVIDUAL';
 
       try {
-        /* Trouver ou créer le client (cherche d'abord par téléphone) */
-        let client = await this.prisma.client.findFirst({ where: { phone: telephone } });
+        /* Trouver ou créer le client */
+        const phoneForSearch = telephone || null;
+        let client = phoneForSearch
+          ? await this.prisma.client.findFirst({ where: { phone: phoneForSearch } })
+          : null;
 
         if (!client) {
           const clientNumber = await this.generateClientNumber();
-          const clientData: any = { type: clientType, phone: telephone, clientNumber };
+          // If no phone, use contract number as placeholder so field is never empty
+          const phoneValue = telephone || `IMP-${contractNumber || clientNumber}`;
+          const clientData: any = { type: clientType, phone: phoneValue, clientNumber };
           if (clientType === 'INDIVIDUAL') {
             if (prenom)  clientData.firstName = prenom;
             if (nom)     clientData.lastName  = nom;
             if (cin)     clientData.cin       = cin;
           } else {
-            clientData.companyName = raisonSociale || `Entreprise ${telephone}`;
+            clientData.companyName = raisonSociale || nom || `Client ${clientNumber}`;
             if (ice)     clientData.ice       = ice;
           }
           if (email) clientData.email = email;
