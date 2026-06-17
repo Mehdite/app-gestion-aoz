@@ -39,6 +39,9 @@ export default function ContratsPage() {
   /* Edit state */
   const [editing, setEditing] = useState<EditState | null>(null);
 
+  /* Selection state */
+  const [selected, setSelected] = useState<string[]>([]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['contracts', { search, status, type, mois, page }],
     queryFn:  () => apiHelper.get<any>('/contracts', { search, status, type, mois: mois || undefined, page, limit: 20 }),
@@ -68,6 +71,20 @@ export default function ContratsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['contracts'] }); toast.success('Production supprimée'); },
     onError: () => toast.error('Erreur lors de la suppression'),
   });
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: (ids: string[]) => api.delete('/contracts/bulk', { data: { ids } }),
+    onSuccess: (_data, ids) => {
+      qc.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success(`${ids.length} production(s) supprimée(s)`);
+      setSelected([]);
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const allSelected = contracts.length > 0 && contracts.every((c: any) => selected.includes(c.id));
+  const toggleAll = () => setSelected(allSelected ? [] : contracts.map((c: any) => c.id));
+  const toggleOne = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   /* ── Télécharger le modèle Excel ── */
   async function downloadTemplate() {
@@ -186,6 +203,27 @@ export default function ContratsPage() {
           </div>
         </div>
 
+        {/* ── Barre sélection ── */}
+        {selected.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+            <span className="text-sm font-medium text-red-700">{selected.length} sélectionné(s)</span>
+            <button
+              onClick={() => {
+                if (window.confirm(`Supprimer définitivement ${selected.length} production(s) ? Cette action est irréversible.`))
+                  bulkDeleteMut.mutate(selected);
+              }}
+              disabled={bulkDeleteMut.isPending}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              {bulkDeleteMut.isPending ? 'Suppression...' : 'Supprimer la sélection'}
+            </button>
+            <button onClick={() => setSelected([])} className="text-sm text-red-500 hover:text-red-700 ml-auto">
+              Annuler
+            </button>
+          </div>
+        )}
+
         {/* ── Résultat import ── */}
         {importResult && (
           <div className={cn(
@@ -228,6 +266,9 @@ export default function ContratsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
+                  <th className="table-header-cell w-8">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 rounded" />
+                  </th>
                   <th className="table-header-cell">N° Police</th>
                   <th className="table-header-cell">Client</th>
                   <th className="table-header-cell">Type</th>
@@ -243,12 +284,12 @@ export default function ContratsPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {isLoading && [...Array(5)].map((_, i) => (
-                  <tr key={i}>{[...Array(11)].map((_, j) => (
+                  <tr key={i}>{[...Array(12)].map((_, j) => (
                     <td key={j} className="table-cell"><div className="animate-pulse bg-gray-100 rounded h-4 w-20" /></td>
                   ))}</tr>
                 ))}
                 {!isLoading && contracts.length === 0 && (
-                  <tr><td colSpan={11} className="text-center py-10 text-gray-400 text-sm">
+                  <tr><td colSpan={12} className="text-center py-10 text-gray-400 text-sm">
                     Aucune production enregistrée
                   </td></tr>
                 )}
@@ -260,7 +301,10 @@ export default function ContratsPage() {
                   const isEditing = editing?.id === c.id;
                   return (
                     <>
-                      <tr key={c.id} className={cn('hover:bg-gray-50 transition-colors', isEditing && 'bg-brand-50')}>
+                      <tr key={c.id} className={cn('hover:bg-gray-50 transition-colors', isEditing && 'bg-brand-50', selected.includes(c.id) && 'bg-red-50')}>
+                        <td className="table-cell">
+                          <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleOne(c.id)} className="w-4 h-4 rounded" />
+                        </td>
                         <td className="table-cell font-mono text-xs font-medium text-gray-900">{c.contractNumber}</td>
                         <td className="table-cell">
                           <p className="text-sm font-medium">{clientName(c.client)}</p>
@@ -328,7 +372,7 @@ export default function ContratsPage() {
                       {/* ── Panneau d'édition inline ── */}
                       {isEditing && editing && (
                         <tr key={`edit-${c.id}`}>
-                          <td colSpan={11} className="bg-brand-50 border-b border-brand-100 px-4 py-4">
+                          <td colSpan={12} className="bg-brand-50 border-b border-brand-100 px-4 py-4">
                             <div className="flex flex-wrap items-end gap-4">
                               {/* Info non modifiable */}
                               <div>

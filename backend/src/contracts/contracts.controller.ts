@@ -82,6 +82,10 @@ export class ContractsController {
     return this.service.renew(id, userId);
   }
 
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Supprimer plusieurs contrats' })
+  bulkDelete(@Body('ids') ids: string[]) { return this.service.bulkDelete(ids); }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer un contrat' })
   remove(@Param('id') id: string) { return this.service.remove(id); }

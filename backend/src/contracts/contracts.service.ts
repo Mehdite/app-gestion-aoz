@@ -124,6 +124,11 @@ export class ContractsService {
     return this.prisma.contract.delete({ where: { id } });
   }
 
+  async bulkDelete(ids: string[]) {
+    const result = await this.prisma.contract.deleteMany({ where: { id: { in: ids } } });
+    return { deleted: result.count };
+  }
+
   async renew(id: string, userId: string) {
     const contract = await this.findOne(id);
     const newExpiry = new Date(contract.expiryDate);
