@@ -75,8 +75,8 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  await app.listen(port);
-  logger.log(`Application running on: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`Application running on: http://0.0.0.0:${port}`);
   logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
 }
 
