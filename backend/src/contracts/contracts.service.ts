@@ -318,8 +318,7 @@ export class ContractsService {
 
         if (!client) {
           const clientNumber = await this.generateClientNumber();
-          // If no phone, use contract number as placeholder so field is never empty
-          const phoneValue = telephone || `IMP-${contractNumber || clientNumber}`;
+          const phoneValue = telephone || '0000000000';
           const clientData: any = { type: clientType, phone: phoneValue, clientNumber };
           if (clientType === 'INDIVIDUAL') {
             if (prenom)  clientData.firstName = prenom;
