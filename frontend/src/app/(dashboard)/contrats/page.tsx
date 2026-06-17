@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency, insuranceTypeLabels } from '@/lib/utils';
-import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save } from 'lucide-react';
+import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
@@ -61,6 +61,12 @@ export default function ContratsPage() {
       setEditing(null);
     },
     onError: () => toast.error('Erreur lors de la mise à jour'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiHelper.delete(`/contracts/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contracts'] }); toast.success('Production supprimée'); },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   /* ── Télécharger le modèle Excel ── */
@@ -308,6 +314,13 @@ export default function ContratsPage() {
                                 <RefreshCw className="w-4 h-4" />
                               </button>
                             )}
+                            <button
+                              onClick={() => { if (window.confirm(`Supprimer la production "${c.contractNumber}" ? Cette action est irréversible.`)) deleteMut.mutate(c.id); }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>

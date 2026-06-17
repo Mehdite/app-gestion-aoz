@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -32,4 +32,8 @@ export class CommissionsController {
   markPaid(@Body('ids') ids: string[]) {
     return this.service.markPaid(ids);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer une commission' })
+  remove(@Param('id') id: string) { return this.service.remove(id); }
 }

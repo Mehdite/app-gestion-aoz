@@ -120,6 +120,10 @@ export class ContractsService {
     });
   }
 
+  async remove(id: string) {
+    return this.prisma.contract.delete({ where: { id } });
+  }
+
   async renew(id: string, userId: string) {
     const contract = await this.findOne(id);
     const newExpiry = new Date(contract.expiryDate);

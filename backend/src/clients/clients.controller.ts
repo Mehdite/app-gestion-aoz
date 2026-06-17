@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Patch, Body, Param, Query,
+  Controller, Get, Post, Put, Patch, Delete, Body, Param, Query,
   UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -49,4 +49,8 @@ export class ClientsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archiver un client' })
   archive(@Param('id') id: string) { return this.service.archive(id); }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un client' })
+  remove(@Param('id') id: string) { return this.service.remove(id); }
 }

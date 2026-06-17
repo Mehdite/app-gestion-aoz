@@ -98,6 +98,10 @@ export class ClientsService {
     return { totalContracts, activeContracts, totalClaims, totalPaid: totalPaid._sum.amount ?? 0 };
   }
 
+  async remove(id: string) {
+    return this.prisma.client.delete({ where: { id } });
+  }
+
   private async generateClientNumber(): Promise<string> {
     const count = await this.prisma.client.count();
     return `AOZ-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;

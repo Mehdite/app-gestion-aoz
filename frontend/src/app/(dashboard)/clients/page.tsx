@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency } from '@/lib/utils';
-import { Plus, Search, Filter, Eye, Edit, Archive, Phone, Mail, Building2, User } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Archive, Trash2, Phone, Mail, Building2, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ClientModal } from './ClientModal';
 
@@ -30,6 +30,12 @@ export default function ClientsPage() {
     mutationFn: (id: string) => apiHelper.patch(`/clients/${id}/archive`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client archivé'); },
     onError: () => toast.error('Erreur lors de l\'archivage'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiHelper.delete(`/clients/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client supprimé'); },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   return (
@@ -142,6 +148,13 @@ export default function ClientsPage() {
                         </button>
                         <button onClick={() => archiveMut.mutate(c.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded hover:bg-red-50">
                           <Archive className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { if (window.confirm(`Supprimer le client "${clientName(c)}" ? Cette action est irréversible.`)) deleteMut.mutate(c.id); }}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>

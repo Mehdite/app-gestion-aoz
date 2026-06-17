@@ -6,7 +6,7 @@ import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, statusColor, statusLabels, formatDate } from '@/lib/utils';
 import Link from 'next/link';
-import { Plus, Phone, Mail, ArrowRight } from 'lucide-react';
+import { Plus, Phone, Mail, ArrowRight, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUSES = ['NEW', 'CONTACTED', 'QUOTE_SENT', 'WON', 'LOST'];
@@ -34,6 +34,12 @@ export default function ProspectsPage() {
       apiHelper.patch(`/prospects/${id}/status`, { status }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['prospects'] }); qc.invalidateQueries({ queryKey: ['prospects-pipeline'] }); toast.success('Statut mis à jour'); },
     onError: () => toast.error('Erreur'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiHelper.delete(`/prospects/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['prospects'] }); qc.invalidateQueries({ queryKey: ['prospects-pipeline'] }); toast.success('Prospect supprimé'); },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   const pipelineColors: Record<string, string> = {
@@ -101,18 +107,23 @@ export default function ProspectsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">Créé {formatDate(p.createdAt)}</p>
-                {p.status !== 'WON' && p.status !== 'LOST' && (
-                  <div className="flex gap-1">
-                    {STATUSES.indexOf(p.status) < STATUSES.length - 2 && (
-                      <button
-                        onClick={() => statusMut.mutate({ id: p.id, status: STATUSES[STATUSES.indexOf(p.status) + 1] })}
-                        className="text-xs flex items-center gap-1 text-brand-600 hover:text-brand-700"
-                      >
-                        Avancer <ArrowRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {p.status !== 'WON' && p.status !== 'LOST' && STATUSES.indexOf(p.status) < STATUSES.length - 2 && (
+                    <button
+                      onClick={() => statusMut.mutate({ id: p.id, status: STATUSES[STATUSES.indexOf(p.status) + 1] })}
+                      className="text-xs flex items-center gap-1 text-brand-600 hover:text-brand-700"
+                    >
+                      Avancer <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { if (window.confirm(`Supprimer "${p.firstName} ${p.lastName}" ? Cette action est irréversible.`)) deleteMut.mutate(p.id); }}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

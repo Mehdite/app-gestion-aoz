@@ -72,6 +72,10 @@ export class ProspectsService {
     return pipeline;
   }
 
+  async remove(id: string) {
+    return this.prisma.prospect.delete({ where: { id } });
+  }
+
   async addTask(prospectId: string, data: any, userId: string) {
     return this.prisma.task.create({ data: { ...data, prospectId, assignedTo: userId } });
   }

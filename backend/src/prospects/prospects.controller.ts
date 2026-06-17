@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -52,4 +52,8 @@ export class ProspectsController {
   addAppointment(@Param('id') id: string, @Body() data: any, @CurrentUser('id') userId: string) {
     return this.service.addAppointment(id, data, userId);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un prospect' })
+  remove(@Param('id') id: string) { return this.service.remove(id); }
 }

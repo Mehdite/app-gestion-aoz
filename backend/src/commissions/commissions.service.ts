@@ -60,6 +60,10 @@ export class CommissionsService {
     return months;
   }
 
+  async remove(id: string) {
+    return this.prisma.commission.delete({ where: { id } });
+  }
+
   async markPaid(ids: string[]) {
     await this.prisma.commission.updateMany({
       where: { id: { in: ids } },

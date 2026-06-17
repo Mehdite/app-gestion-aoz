@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Patch, Body, Param, Query,
+  Controller, Get, Post, Put, Patch, Delete, Body, Param, Query,
   UseGuards, UseInterceptors, UploadedFile, Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -81,4 +81,8 @@ export class ContractsController {
   renew(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.service.renew(id, userId);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un contrat' })
+  remove(@Param('id') id: string) { return this.service.remove(id); }
 }

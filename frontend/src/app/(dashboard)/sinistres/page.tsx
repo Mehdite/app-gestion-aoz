@@ -6,7 +6,7 @@ import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Plus, Search, Eye, CheckCircle } from 'lucide-react';
+import { Plus, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CLAIM_STATUSES = ['DECLARED', 'IN_PROGRESS', 'EXPERTISE', 'CLOSED'];
@@ -30,6 +30,12 @@ export default function SinistresPage() {
       apiHelper.patch(`/claims/${id}/status`, { status: s }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['claims'] }); toast.success('Statut mis à jour'); },
     onError: () => toast.error('Erreur'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiHelper.delete(`/claims/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['claims'] }); toast.success('Sinistre supprimé'); },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   return (
@@ -135,6 +141,13 @@ export default function SinistresPage() {
                             <CheckCircle className="w-4 h-4" />
                           </button>
                         )}
+                        <button
+                          onClick={() => { if (window.confirm(`Supprimer le sinistre "${c.claimNumber}" ? Cette action est irréversible.`)) deleteMut.mutate(c.id); }}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

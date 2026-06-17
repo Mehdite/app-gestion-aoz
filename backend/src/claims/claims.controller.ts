@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Patch, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -56,4 +56,8 @@ export class ClaimsController {
   ) {
     return this.service.updateStatus(id, status, notes);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un sinistre' })
+  remove(@Param('id') id: string) { return this.service.remove(id); }
 }

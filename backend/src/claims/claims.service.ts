@@ -80,6 +80,10 @@ export class ClaimsService {
     return this.prisma.claim.update({ where: { id }, data });
   }
 
+  async remove(id: string) {
+    return this.prisma.claim.delete({ where: { id } });
+  }
+
   private async generateClaimNumber(): Promise<string> {
     const count = await this.prisma.claim.count();
     const year = new Date().getFullYear();
