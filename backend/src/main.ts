@@ -14,8 +14,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false });
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3001);
+  const port = parseInt(process.env.PORT ?? '3001', 10);
   const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+  logger.log(`PORT env = ${process.env.PORT}, listening on ${port}`);
 
   // Security
   app.use(helmet());
