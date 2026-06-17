@@ -23,11 +23,11 @@ export const timeAgo = (date: string | Date) => {
 
 export const formatCurrency = (amount: number | string | null | undefined, currency = 'MAD') => {
   if (amount == null) return '—';
-  return new Intl.NumberFormat('fr-MA', {
-    style: 'currency',
-    currency,
+  const formatted = new Intl.NumberFormat('fr-MA', {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(amount));
+  return `${formatted} ${currency}`;
 };
 
 export const formatNumber = (n: number | null | undefined) => {

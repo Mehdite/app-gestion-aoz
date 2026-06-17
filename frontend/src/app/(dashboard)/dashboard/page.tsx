@@ -5,7 +5,7 @@ import { apiHelper } from '@/lib/api';
 import { formatCurrency, formatDate, clientName, statusColor, statusLabels } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import {
-  Users, FileCheck, AlertTriangle, TrendingUp, DollarSign, Clock, Target, RefreshCw,
+  Users, FileCheck, AlertTriangle, TrendingUp, Banknote, Clock, Target, RefreshCw,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar,
@@ -29,7 +29,7 @@ export default function DashboardPage() {
     { label: 'Clients actifs', value: stats.totalClients ?? 0, icon: Users, color: 'text-blue-600 bg-blue-50', change: null },
     { label: 'Contrats actifs', value: stats.activeContracts ?? 0, icon: FileCheck, color: 'text-green-600 bg-green-50', change: null },
     { label: 'Sinistres ouverts', value: stats.openClaims ?? 0, icon: AlertTriangle, color: 'text-red-600 bg-red-50', change: null },
-    { label: 'CA du mois', value: formatCurrency(stats.monthRevenue), icon: DollarSign, color: 'text-purple-600 bg-purple-50', change: null },
+    { label: 'CA du mois', value: formatCurrency(stats.monthRevenue), icon: Banknote, color: 'text-purple-600 bg-purple-50', change: null },
     { label: 'Commissions', value: formatCurrency(stats.monthCommissions), icon: TrendingUp, color: 'text-amber-600 bg-amber-50', change: null },
     { label: 'Écheances 30j', value: stats.expiringContracts ?? 0, icon: Clock, color: 'text-orange-600 bg-orange-50', change: null },
     { label: 'Total sinistres', value: stats.totalClaims ?? 0, icon: AlertTriangle, color: 'text-gray-600 bg-gray-50', change: null },
@@ -88,7 +88,7 @@ export default function DashboardPage() {
           {/* Commissions chart */}
           <div className="card">
             <h3 className="mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-amber-500" />
+              <Banknote className="w-4 h-4 text-amber-500" />
               Commissions mensuelles (MAD)
             </h3>
             <ResponsiveContainer width="100%" height={220}>
