@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, formatDate } from '@/lib/utils';
-import { Plus, X, UserCheck, UserX, Eye, EyeOff, Shield } from 'lucide-react';
+import { Plus, X, UserCheck, UserX, Eye, EyeOff, Shield, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ROLES = ['ADMIN', 'AGENT'];
@@ -45,6 +45,7 @@ export default function UtilisateursPage() {
   const qc = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editPerms, setEditPerms] = useState<{ id: string; permissions: string[] } | null>(null);
+  const [editUser, setEditUser] = useState<{ id: string; firstName: string; lastName: string; phone: string; role: string } | null>(null);
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [showPwd, setShowPwd] = useState(false);
 
@@ -70,6 +71,16 @@ export default function UtilisateursPage() {
     mutationFn: (id: string) => apiHelper.patch(`/users/${id}/toggle`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Statut mis à jour'); },
     onError: () => toast.error('Erreur'),
+  });
+
+  const editMut = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiHelper.put(`/users/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Utilisateur modifié');
+      setEditUser(null);
+    },
+    onError: () => toast.error('Erreur lors de la modification'),
   });
 
   const permsMut = useMutation({
@@ -182,6 +193,13 @@ export default function UtilisateursPage() {
                   </td>
                   <td className="table-cell">
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEditUser({ id: u.id, firstName: u.firstName, lastName: u.lastName, phone: u.phone ?? '', role: u.role })}
+                        className="p-1.5 text-gray-400 hover:text-brand-600 rounded hover:bg-brand-50"
+                        title="Modifier"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                       {u.role !== 'ADMIN' && (
                         <button
                           onClick={() => setEditPerms({ id: u.id, permissions: u.permissions ?? [] })}
@@ -300,6 +318,52 @@ export default function UtilisateursPage() {
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
                   Annuler
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal modification utilisateur */}
+      {editUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900">Modifier l'utilisateur</h2>
+              <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); editMut.mutate(editUser); }}
+              className="px-6 py-5 space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Prénom</label>
+                  <input className="input" value={editUser.firstName} onChange={e => setEditUser(u => u && ({ ...u, firstName: e.target.value }))} required />
+                </div>
+                <div>
+                  <label className="label">Nom</label>
+                  <input className="input" value={editUser.lastName} onChange={e => setEditUser(u => u && ({ ...u, lastName: e.target.value }))} required />
+                </div>
+              </div>
+              <div>
+                <label className="label">Téléphone</label>
+                <input className="input" value={editUser.phone} onChange={e => setEditUser(u => u && ({ ...u, phone: e.target.value }))} placeholder="0661234567" />
+              </div>
+              <div>
+                <label className="label">Rôle</label>
+                <select className="input" value={editUser.role} onChange={e => setEditUser(u => u && ({ ...u, role: e.target.value }))}>
+                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">ADMIN : accès complet · AGENT : accès limité</p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={editMut.isPending} className="btn-primary flex-1">
+                  {editMut.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button type="button" onClick={() => setEditUser(null)} className="btn-secondary">Annuler</button>
               </div>
             </form>
           </div>
