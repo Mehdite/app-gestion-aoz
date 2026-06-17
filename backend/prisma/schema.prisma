@@ -19,6 +19,7 @@ model User {
   phone         String?
   avatar        String?
   role          String    @default("AGENT")   // ADMIN | MANAGER | ACCOUNTANT | AGENT
+  permissions   String    @default("[]")       // JSON array of allowed module keys
   isActive      Boolean   @default(true)
   refreshToken  String?
   lastLoginAt   DateTime?

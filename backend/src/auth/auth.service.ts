@@ -21,6 +21,10 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
+  private parsePermissions(raw: string): string[] {
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) throw new UnauthorizedException('Identifiants invalides');
@@ -28,8 +32,8 @@ export class AuthService {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new UnauthorizedException('Identifiants invalides');
 
-    const { password: _, refreshToken: __, ...result } = user;
-    return result;
+    const { password: _, refreshToken: __, permissions, ...rest } = user;
+    return { ...rest, permissions: this.parsePermissions(permissions) };
   }
 
   async login(dto: LoginDto) {
@@ -96,10 +100,19 @@ export class AuthService {
       where: { id: userId },
       select: {
         id: true, email: true, firstName: true, lastName: true,
-        phone: true, avatar: true, role: true, lastLoginAt: true, createdAt: true,
+        phone: true, avatar: true, role: true, permissions: true, lastLoginAt: true, createdAt: true,
       },
     });
     if (!user) throw new UnauthorizedException();
-    return user;
+    return { ...user, permissions: this.parsePermissions(user.permissions) };
+  }
+
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: { id: true, email: true, firstName: true, lastName: true, phone: true, role: true, permissions: true },
+    });
+    return { ...user, permissions: this.parsePermissions(user.permissions) };
   }
 }

@@ -11,14 +11,14 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { label: 'Tableau de bord',      href: '/dashboard',   icon: LayoutDashboard },
-  { label: 'Clients',              href: '/clients',      icon: Users },
-  { label: 'Prospects',            href: '/prospects',    icon: UserSearch },
-  { label: 'Production',           href: '/contrats',     icon: FileCheck },
-  { label: 'Quittances Impayées',  href: '/quittances',  icon: FileWarning },
-  { label: 'Sinistres',            href: '/sinistres',    icon: AlertTriangle },
-  { label: 'Commissions',          href: '/commissions',  icon: TrendingUp },
-  { label: 'Rapports',             href: '/rapports',     icon: BarChart3 },
+  { label: 'Tableau de bord',      href: '/dashboard',   icon: LayoutDashboard, key: 'dashboard' },
+  { label: 'Clients',              href: '/clients',      icon: Users,           key: 'clients' },
+  { label: 'Prospects',            href: '/prospects',    icon: UserSearch,      key: 'prospects' },
+  { label: 'Production',           href: '/contrats',     icon: FileCheck,       key: 'contrats' },
+  { label: 'Quittances Impayées',  href: '/quittances',  icon: FileWarning,     key: 'quittances' },
+  { label: 'Sinistres',            href: '/sinistres',    icon: AlertTriangle,   key: 'sinistres' },
+  { label: 'Commissions',          href: '/commissions',  icon: TrendingUp,      key: 'commissions' },
+  { label: 'Rapports',             href: '/rapports',     icon: BarChart3,       key: 'rapports' },
 ];
 
 const adminItems = [
@@ -45,15 +45,23 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        {navItems.map(({ label, href, icon: Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link key={href} href={href} className={cn(active ? 'sidebar-link-active' : 'sidebar-link')}>
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        {navItems
+          .filter(({ key }) => {
+            if (!user) return false;
+            if (user.role === 'ADMIN') return true;
+            if (key === 'dashboard') return true;
+            const perms: string[] = user.permissions ?? [];
+            return perms.length === 0 || perms.includes(key);
+          })
+          .map(({ label, href, icon: Icon }) => {
+            const active = pathname.startsWith(href);
+            return (
+              <Link key={href} href={href} className={cn(active ? 'sidebar-link-active' : 'sidebar-link')}>
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
 
         {user?.role === 'ADMIN' && (
           <>

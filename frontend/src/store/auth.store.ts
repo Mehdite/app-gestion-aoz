@@ -9,6 +9,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: 'ADMIN' | 'MANAGER' | 'ACCOUNTANT' | 'AGENT';
+  permissions: string[];
   avatar?: string;
 }
 
