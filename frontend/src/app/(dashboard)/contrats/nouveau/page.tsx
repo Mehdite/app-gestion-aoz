@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,8 +90,10 @@ export default function SaisirProductionPage() {
 
   /* ---------- mode client ---------- */
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
-  const [clientSearch, setClientSearch]       = useState('');
-  const [showClientDrop, setShowClientDrop]   = useState(false);
+  const [clientSearch, setClientSearch]     = useState('');
+  const [showClientDrop, setShowClientDrop] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedClientObj, setSelectedClientObj] = useState<any>(null);
 
   /* ---------- formulaire nouveau client ---------- */
   const [nc, setNc] = useState({
@@ -106,6 +108,8 @@ export default function SaisirProductionPage() {
     city:        '',
   });
   const [ncErrors, setNcErrors] = useState<Record<string, string>>({});
+  const ncRef = useRef(nc);
+  useEffect(() => { ncRef.current = nc; }, [nc]);
 
   /* ---------- formulaire production ---------- */
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
@@ -117,12 +121,9 @@ export default function SaisirProductionPage() {
   const reduction     = Number(watch('reduction')) || 0;
   const primePaye     = Number(watch('primePaye')) || 0;
   const effectiveDate = watch('effectiveDate');
-  const clientId      = watch('clientId');
 
   const primeNette  = Math.max(0, primeTTC - reduction);
   const resteAPayer = Math.max(0, primeNette - primePaye);
-
-  const selectedClient = clients.find((c: any) => c.id === clientId);
 
   const filteredClients = clientSearch.length >= 1
     ? clients.filter((c: any) => {
@@ -156,30 +157,30 @@ export default function SaisirProductionPage() {
   /* ---------- mutations ---------- */
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      let resolvedClientId = data.clientId;
+      const currentNc = ncRef.current;
+      let resolvedClientId = selectedClientId;
 
-      /* Créer le client si nouveau */
       if (clientMode === 'new') {
         const clientPayload: any = {
-          type:  nc.type,
-          phone: nc.phone.trim(),
+          type:  currentNc.type,
+          phone: currentNc.phone.trim(),
         };
-        if (nc.type === 'INDIVIDUAL') {
-          clientPayload.firstName = nc.firstName.trim();
-          clientPayload.lastName  = nc.lastName.trim();
-          if (nc.cin.trim())   clientPayload.cin   = nc.cin.trim();
+        if (currentNc.type === 'INDIVIDUAL') {
+          clientPayload.firstName = currentNc.firstName.trim();
+          clientPayload.lastName  = currentNc.lastName.trim();
+          if (currentNc.cin.trim()) clientPayload.cin = currentNc.cin.trim();
         } else {
-          clientPayload.companyName = nc.companyName.trim();
-          if (nc.ice.trim())   clientPayload.ice   = nc.ice.trim();
+          clientPayload.companyName = currentNc.companyName.trim();
+          if (currentNc.ice.trim()) clientPayload.ice = currentNc.ice.trim();
         }
-        if (nc.email.trim()) clientPayload.email = nc.email.trim();
-        if (nc.city.trim())  clientPayload.city  = nc.city.trim();
+        if (currentNc.email.trim()) clientPayload.email = currentNc.email.trim();
+        if (currentNc.city.trim())  clientPayload.city  = currentNc.city.trim();
 
         const res = await apiHelper.post<any>('/clients', clientPayload);
         resolvedClientId = (res as any).data?.id ?? (res as any).id;
       }
 
-      if (!resolvedClientId) throw new Error('Client introuvable');
+      if (!resolvedClientId) throw new Error('Client introuvable — veuillez sélectionner ou créer un client');
 
       return apiHelper.post('/contracts', {
         ...data,
@@ -203,8 +204,8 @@ export default function SaisirProductionPage() {
 
   const onSubmit = (data: FormData) => {
     if (!axaId) { toast.error('Compagnie AXA introuvable'); return; }
-    if (clientMode === 'existing' && !data.clientId) {
-      toast.error('Veuillez sélectionner un client');
+    if (clientMode === 'existing' && !selectedClientId) {
+      toast.error('Veuillez sélectionner un client dans la liste');
       return;
     }
     if (clientMode === 'new' && !validateNewClient()) return;
@@ -288,7 +289,6 @@ export default function SaisirProductionPage() {
               {/* Sélection client existant */}
               {clientMode === 'existing' && (
                 <div className="space-y-3">
-                  <input type="hidden" {...register('clientId')} />
                   <div className="relative">
                     <input
                       type="text"
@@ -298,7 +298,8 @@ export default function SaisirProductionPage() {
                       onChange={(e) => {
                         setClientSearch(e.target.value);
                         setShowClientDrop(true);
-                        setValue('clientId', '');
+                        setSelectedClientId('');
+                        setSelectedClientObj(null);
                       }}
                       onFocus={() => setShowClientDrop(true)}
                       onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
@@ -312,7 +313,8 @@ export default function SaisirProductionPage() {
                             type="button"
                             className="w-full px-3 py-2.5 text-left hover:bg-brand-50 flex items-center justify-between gap-2 border-b border-gray-50 last:border-0"
                             onMouseDown={() => {
-                              setValue('clientId', c.id);
+                              setSelectedClientId(c.id);
+                              setSelectedClientObj(c);
                               setClientSearch(
                                 c.type === 'INDIVIDUAL'
                                   ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
@@ -339,21 +341,21 @@ export default function SaisirProductionPage() {
                   </div>
 
                   {/* Fiche client sélectionné */}
-                  {selectedClient && (
+                  {selectedClientObj && (
                     <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-100 rounded-lg">
                       <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
                         <p className="font-semibold text-gray-900">
-                          {selectedClient.type === 'INDIVIDUAL'
-                            ? `${selectedClient.firstName} ${selectedClient.lastName}`
-                            : selectedClient.companyName}
+                          {selectedClientObj.type === 'INDIVIDUAL'
+                            ? `${selectedClientObj.firstName ?? ''} ${selectedClientObj.lastName ?? ''}`.trim()
+                            : selectedClientObj.companyName}
                         </p>
                         <div className="text-gray-500 text-xs mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5">
-                          {selectedClient.phone && <span>📞 {selectedClient.phone}</span>}
-                          {selectedClient.cin   && <span>CIN: {selectedClient.cin}</span>}
-                          {selectedClient.ice   && <span>ICE: {selectedClient.ice}</span>}
-                          {selectedClient.city  && <span>📍 {selectedClient.city}</span>}
-                          {selectedClient.email && <span>✉ {selectedClient.email}</span>}
+                          {selectedClientObj.phone && <span>📞 {selectedClientObj.phone}</span>}
+                          {selectedClientObj.cin   && <span>CIN: {selectedClientObj.cin}</span>}
+                          {selectedClientObj.ice   && <span>ICE: {selectedClientObj.ice}</span>}
+                          {selectedClientObj.city  && <span>📍 {selectedClientObj.city}</span>}
+                          {selectedClientObj.email && <span>✉ {selectedClientObj.email}</span>}
                         </div>
                       </div>
                     </div>
