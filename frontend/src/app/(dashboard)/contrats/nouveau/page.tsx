@@ -89,6 +89,8 @@ export default function SaisirProductionPage() {
 
   /* ---------- mode client ---------- */
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
+  const [clientSearch, setClientSearch]       = useState('');
+  const [showClientDrop, setShowClientDrop]   = useState(false);
 
   /* ---------- formulaire nouveau client ---------- */
   const [nc, setNc] = useState({
@@ -120,6 +122,16 @@ export default function SaisirProductionPage() {
   const resteAPayer = Math.max(0, primeNette - primePaye);
 
   const selectedClient = clients.find((c: any) => c.id === clientId);
+
+  const filteredClients = clientSearch.length >= 1
+    ? clients.filter((c: any) => {
+        const name = c.type === 'INDIVIDUAL'
+          ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.toLowerCase()
+          : (c.companyName ?? '').toLowerCase();
+        const q = clientSearch.toLowerCase();
+        return name.includes(q) || (c.phone ?? '').includes(q) || (c.cin ?? '').toLowerCase().includes(q);
+      }).slice(0, 8)
+    : [];
 
   /* ---------- auto-calcul échéance ---------- */
   useEffect(() => {
@@ -273,15 +285,54 @@ export default function SaisirProductionPage() {
               {/* Sélection client existant */}
               {clientMode === 'existing' && (
                 <div className="space-y-3">
-                  <select className="input" {...register('clientId')}>
-                    <option value="">Sélectionner un client...</option>
-                    {clients.map((c: any) => (
-                      <option key={c.id} value={c.id}>
-                        {c.type === 'INDIVIDUAL' ? `${c.firstName} ${c.lastName}` : c.companyName}
-                        {c.phone ? ` — ${c.phone}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Rechercher par nom, téléphone ou CIN..."
+                      value={clientSearch}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDrop(true);
+                        setValue('clientId', '');
+                      }}
+                      onFocus={() => setShowClientDrop(true)}
+                      onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
+                      autoComplete="off"
+                    />
+                    {showClientDrop && filteredClients.length > 0 && (
+                      <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-52 overflow-y-auto">
+                        {filteredClients.map((c: any) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className="w-full px-3 py-2.5 text-left hover:bg-brand-50 flex items-center justify-between gap-2 border-b border-gray-50 last:border-0"
+                            onMouseDown={() => {
+                              setValue('clientId', c.id);
+                              setClientSearch(
+                                c.type === 'INDIVIDUAL'
+                                  ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
+                                  : c.companyName ?? ''
+                              );
+                              setShowClientDrop(false);
+                            }}
+                          >
+                            <span className="font-medium text-sm text-gray-900">
+                              {c.type === 'INDIVIDUAL'
+                                ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
+                                : c.companyName}
+                            </span>
+                            <span className="text-xs text-gray-400 shrink-0">{c.phone}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {showClientDrop && clientSearch.length >= 1 && filteredClients.length === 0 && (
+                      <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 px-3 py-3 text-sm text-gray-400">
+                        Aucun client trouvé — utilisez "Nouveau client"
+                      </div>
+                    )}
+                  </div>
 
                   {/* Fiche client sélectionné */}
                   {selectedClient && (
