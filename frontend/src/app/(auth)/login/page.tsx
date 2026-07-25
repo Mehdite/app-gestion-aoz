@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
-import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -41,11 +41,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
-            <Shield className="w-8 h-8 text-brand-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Assurances Oued Zem</h1>
-          <p className="text-brand-200 mt-1 text-sm">Gestion d'agence d'assurance</p>
+          <img
+            src="/logo.png"
+            alt="Assurances Oued Zem"
+            className="mx-auto mb-2 h-20 object-contain"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
         </div>
 
         {/* Card */}

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard, Users, UserSearch, FileCheck,
-  AlertTriangle, BarChart3, Settings, LogOut, Shield, Users2,
+  AlertTriangle, BarChart3, Settings, LogOut, Users2,
 } from 'lucide-react';
 
 const navItems = [
@@ -22,28 +22,43 @@ const navItems = [
 
 const adminItems = [
   { label: 'Utilisateurs', href: '/utilisateurs', icon: Users2 },
-  { label: 'Paramètres', href: '/parametres', icon: Settings },
+  { label: 'Paramètres',   href: '/parametres',   icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
 
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
+
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col z-30">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-200">
-        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-          <Shield className="w-4 h-4 text-white" />
-        </div>
+    <aside
+      className="fixed left-0 top-0 h-screen w-64 flex flex-col z-30"
+      style={{ background: '#091F3D', boxShadow: '2px 0 24px 0 rgba(4, 13, 26, 0.25)' }}
+    >
+      {/* ── Logo ─────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-3 px-4 h-16 flex-shrink-0"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        <img
+          src="/logo-mark.png"
+          alt="AO"
+          width={36}
+          height={36}
+          className="flex-shrink-0 object-contain"
+          style={{ filter: 'brightness(0) invert(1)' }}
+        />
         <div>
-          <p className="text-sm font-bold text-gray-900 leading-tight">Assurances</p>
-          <p className="text-xs text-gray-500">Oued Zem</p>
+          <p className="text-sm font-bold text-white leading-tight tracking-tight">Assurances</p>
+          <p className="text-xs font-medium" style={{ color: 'rgba(148, 180, 216, 0.75)' }}>
+            Oued Zem
+          </p>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+      {/* ── Navigation ───────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
         {navItems
           .filter(({ key }) => {
             if (!user) return false;
@@ -55,8 +70,11 @@ export function Sidebar() {
           .map(({ label, href, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
-              <Link key={href} href={href} className={cn(active ? 'sidebar-link-active' : 'sidebar-link')}>
-                <Icon className="w-4 h-4 flex-shrink-0" />
+              <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'}>
+                <Icon
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: active ? '#1A73E8' : undefined }}
+                />
                 <span>{label}</span>
               </Link>
             );
@@ -64,14 +82,22 @@ export function Sidebar() {
 
         {user?.role === 'ADMIN' && (
           <>
-            <div className="pt-4 pb-1 px-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Administration</p>
+            <div className="pt-5 pb-1.5 px-3">
+              <p
+                className="text-xs font-semibold uppercase tracking-widest"
+                style={{ color: 'rgba(107, 163, 204, 0.50)' }}
+              >
+                Administration
+              </p>
             </div>
             {adminItems.map(({ label, href, icon: Icon }) => {
               const active = pathname.startsWith(href);
               return (
-                <Link key={href} href={href} className={cn(active ? 'sidebar-link-active' : 'sidebar-link')}>
-                  <Icon className="w-4 h-4 flex-shrink-0" />
+                <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'}>
+                  <Icon
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: active ? '#1A73E8' : undefined }}
+                  />
                   <span>{label}</span>
                 </Link>
               );
@@ -80,19 +106,37 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* User */}
-      <div className="border-t border-gray-200 p-3">
+      {/* ── User footer ──────────────────────────────── */}
+      <div
+        className="flex-shrink-0 p-3"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+      >
         <div className="flex items-center gap-3 px-2 py-2 rounded-lg">
-          <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-brand-600 text-xs font-bold">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </span>
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #1A73E8 0%, #0F4880 100%)' }}
+          >
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-gray-400 truncate">{user?.role}</p>
+            <p className="text-sm font-medium text-white truncate leading-tight">
+              {user?.firstName} {user?.lastName}
+            </p>
+            <p
+              className="text-xs truncate mt-0.5 font-medium"
+              style={{ color: 'rgba(107, 163, 204, 0.70)' }}
+            >
+              {user?.role === 'ADMIN' ? 'Administrateur' : 'Agent'}
+            </p>
           </div>
-          <button onClick={logout} className="text-gray-400 hover:text-red-500 transition-colors" title="Déconnexion">
+          <button
+            onClick={logout}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'rgba(148, 180, 216, 0.55)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148, 180, 216, 0.55)')}
+            title="Déconnexion"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
