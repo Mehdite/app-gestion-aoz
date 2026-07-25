@@ -5,10 +5,10 @@ import { apiHelper } from '@/lib/api';
 import { formatCurrency, formatDate, clientName, statusColor, statusLabels } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import {
-  Users, FileCheck, AlertTriangle, TrendingUp, Banknote, Clock, Target, Wallet,
+  Users, FileCheck, AlertTriangle, TrendingUp, Banknote, Clock, Target,
 } from 'lucide-react';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -51,12 +51,6 @@ export default function DashboardPage() {
       icon: TrendingUp,
       color: 'text-brand-600 bg-brand-50',
       sub: `Reste : ${formatCurrency(stats.totalReste ?? 0)}`,
-    },
-    {
-      label: 'Commissions mois',
-      value: formatCurrency(stats.monthCommissions ?? 0),
-      icon: Wallet,
-      color: 'text-amber-600 bg-amber-50',
     },
     {
       label: 'Échéances 30j',
@@ -108,54 +102,33 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* CA mensuel */}
-          <div className="card">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-800">
-              <TrendingUp className="w-4 h-4 text-brand-600" />
-              CA mensuel — Primes TTC (MAD)
-            </h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={revenue} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#1A73E8" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#1A73E8" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="encGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#16A34A" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#16A34A" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: any) => formatCurrency(v)} />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                <Area type="monotone" dataKey="revenue"      name="Prime TTC"   stroke="#1A73E8" fill="url(#revGrad)" strokeWidth={2} />
-                <Area type="monotone" dataKey="encaissement" name="Encaissé"    stroke="#16A34A" fill="url(#encGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Commissions */}
-          <div className="card">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-800">
-              <Banknote className="w-4 h-4 text-amber-500" />
-              Commissions mensuelles (MAD)
-            </h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={revenue} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: any) => formatCurrency(v)} />
-                <Bar dataKey="commissions" name="Commissions" fill="#D97706" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Chart CA */}
+        <div className="card">
+          <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-800">
+            <TrendingUp className="w-4 h-4 text-brand-600" />
+            CA mensuel — Primes TTC vs Encaissements (MAD)
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={revenue} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#1A73E8" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#1A73E8" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="encGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#16A34A" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#16A34A" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v: any) => formatCurrency(v)} />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="revenue"      name="Prime TTC" stroke="#1A73E8" fill="url(#revGrad)" strokeWidth={2} />
+              <Area type="monotone" dataKey="encaissement" name="Encaissé"  stroke="#16A34A" fill="url(#encGrad)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Récents */}
