@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard, Users, UserSearch, FileCheck,
-  AlertTriangle, BarChart3, Settings, LogOut, Users2,
+  AlertTriangle, BarChart3, Settings, LogOut, Users2, X,
 } from 'lucide-react';
 
 const navItems = [
@@ -25,6 +25,13 @@ const adminItems = [
   { label: 'Paramètres',   href: '/parametres',   icon: Settings },
 ];
 
+function closeSidebar() {
+  const aside = document.querySelector('aside.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (aside) aside.classList.remove('sidebar--open');
+  if (backdrop) backdrop.style.display = 'none';
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -33,7 +40,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="fixed left-0 top-0 h-screen w-64 flex flex-col z-30"
+      className="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col z-30"
       style={{ background: '#091F3D', boxShadow: '2px 0 24px 0 rgba(4, 13, 26, 0.25)' }}
     >
       {/* ── Logo ─────────────────────────────────────── */}
@@ -49,12 +56,19 @@ export function Sidebar() {
           className="flex-shrink-0 object-contain"
           style={{ filter: 'brightness(0) invert(1)' }}
         />
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-white leading-tight tracking-tight">Assurances</p>
           <p className="text-xs font-medium" style={{ color: 'rgba(148, 180, 216, 0.75)' }}>
             Oued Zem
           </p>
         </div>
+        <button
+          onClick={closeSidebar}
+          className="lg:hidden p-1.5 rounded-lg transition-colors"
+          style={{ color: 'rgba(148,180,216,0.6)' }}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* ── Navigation ───────────────────────────────── */}
@@ -70,7 +84,7 @@ export function Sidebar() {
           .map(({ label, href, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
-              <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'}>
+              <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'} onClick={closeSidebar}>
                 <Icon
                   className="w-4 h-4 flex-shrink-0"
                   style={{ color: active ? '#1A73E8' : undefined }}
@@ -93,7 +107,7 @@ export function Sidebar() {
             {adminItems.map(({ label, href, icon: Icon }) => {
               const active = pathname.startsWith(href);
               return (
-                <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'}>
+                <Link key={href} href={href} className={active ? 'sidebar-link-active' : 'sidebar-link'} onClick={closeSidebar}>
                   <Icon
                     className="w-4 h-4 flex-shrink-0"
                     style={{ color: active ? '#1A73E8' : undefined }}

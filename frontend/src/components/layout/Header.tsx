@@ -5,10 +5,18 @@ import { useUser } from '@/store/auth.store';
 
 interface HeaderProps {
   title: string;
-  onMenuClick?: () => void;
 }
 
-export function Header({ title, onMenuClick }: HeaderProps) {
+function toggleSidebar() {
+  const aside = document.querySelector('aside.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!aside) return;
+  const isOpen = aside.classList.contains('sidebar--open');
+  aside.classList.toggle('sidebar--open', !isOpen);
+  if (backdrop) backdrop.style.display = isOpen ? 'none' : 'block';
+}
+
+export function Header({ title }: HeaderProps) {
   const user = useUser();
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
@@ -19,7 +27,7 @@ export function Header({ title, onMenuClick }: HeaderProps) {
     >
       <div className="flex items-center gap-4">
         <button
-          onClick={onMenuClick}
+          onClick={toggleSidebar}
           className="lg:hidden p-1.5 rounded-lg transition-colors hover:bg-[#F0F4F9]"
           style={{ color: '#7A98B8' }}
         >
