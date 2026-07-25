@@ -33,15 +33,18 @@ type FormData = z.infer<typeof schema>;
 /* Constantes                                                           */
 /* ------------------------------------------------------------------ */
 const TYPES = [
-  { value: 'AUTO',         label: 'Automobile' },
-  { value: 'MOTO',         label: 'Moto' },
-  { value: 'HOME',         label: 'Habitation' },
-  { value: 'HEALTH',       label: 'Santé' },
-  { value: 'PROFESSIONAL', label: 'Multirisque Pro' },
-  { value: 'DECENNIAL',    label: 'Décennale' },
-  { value: 'TRANSPORT',    label: 'Transport' },
-  { value: 'LIFE',         label: 'Vie' },
-  { value: 'OTHER',        label: 'Autre' },
+  { value: 'AUTO',            label: 'Automobile' },
+  { value: 'MOTO',            label: 'Moto' },
+  { value: 'HOME',            label: 'Habitation' },
+  { value: 'HEALTH',          label: 'Santé' },
+  { value: 'PROFESSIONAL',    label: 'Multirisque Pro' },
+  { value: 'DECENNIAL',       label: 'Décennale' },
+  { value: 'TRANSPORT',       label: 'Transport' },
+  { value: 'LIFE',            label: 'Vie' },
+  { value: 'WORK_ACCIDENT',   label: 'Accident de travail' },
+  { value: 'RC_EXPLOITATION', label: 'RC Exploitation' },
+  { value: 'RC_PRO',          label: 'RC Pro' },
+  { value: 'OTHER',           label: 'Autre' },
 ];
 
 const FREQUENCIES = [

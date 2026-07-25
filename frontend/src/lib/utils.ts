@@ -86,6 +86,9 @@ export const insuranceTypeLabels: Record<string, string> = {
   DECENNIAL: 'Décennale',
   TRANSPORT: 'Transport',
   LIFE: 'Vie',
+  WORK_ACCIDENT: 'Accident de travail',
+  RC_EXPLOITATION: 'RC Exploitation',
+  RC_PRO: 'RC Pro',
   OTHER: 'Autre',
 };
 

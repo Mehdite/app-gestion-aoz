@@ -10,7 +10,7 @@ import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, 
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
-const TYPE_OPTIONS   = ['', 'AUTO', 'MOTO', 'HOME', 'HEALTH', 'PROFESSIONAL', 'DECENNIAL', 'TRANSPORT', 'LIFE'];
+const TYPE_OPTIONS   = ['', 'AUTO', 'MOTO', 'HOME', 'HEALTH', 'PROFESSIONAL', 'DECENNIAL', 'TRANSPORT', 'LIFE', 'WORK_ACCIDENT', 'RC_EXPLOITATION', 'RC_PRO'];
 
 type ImportResult = { imported: number; errors: string[] };
 

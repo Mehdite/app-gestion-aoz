@@ -272,7 +272,7 @@ export class ContractsService {
       ] = r.map((c: any) => String(c ?? '').trim());
 
       /* Validation de base */
-      const VALID_TYPES  = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','OTHER'];
+      const VALID_TYPES  = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','WORK_ACCIDENT','RC_EXPLOITATION','RC_PRO','OTHER'];
       const VALID_FREQS  = ['ANNUAL','SEMI_ANNUAL','QUARTERLY','MONTHLY'];
 
       if (!VALID_TYPES.includes(typeAssurance.toUpperCase())) {
