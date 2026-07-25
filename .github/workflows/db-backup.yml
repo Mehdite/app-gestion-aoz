@@ -18,9 +18,10 @@ jobs:
       - name: Run pg_dump
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGSSLMODE: require
         run: |
           DATE=$(date +%Y-%m-%d)
-          pg_dump "$DATABASE_URL" \
+          pg_dump "${DATABASE_URL}?sslmode=require" \
             --no-password \
             --format=custom \
             --file="backup-aoz-${DATE}.dump"
