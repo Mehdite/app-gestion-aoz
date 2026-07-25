@@ -26,7 +26,7 @@ jobs:
           PGSSLMODE: require
         run: |
           DATE=$(date +%Y-%m-%d)
-          pg_dump "${DATABASE_URL}?sslmode=require" \
+          /usr/lib/postgresql/18/bin/pg_dump "${DATABASE_URL}?sslmode=require" \
             --no-password \
             --format=custom \
             --file="backup-aoz-${DATE}.dump"
