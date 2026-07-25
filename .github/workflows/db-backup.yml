@@ -1,0 +1,35 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # Chaque jour à 02h00 UTC (03h00 Maroc)
+  workflow_dispatch:        # Permet de lancer manuellement depuis GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+
+      - name: Run pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          pg_dump "$DATABASE_URL" \
+            --no-password \
+            --format=custom \
+            --file="backup-aoz-${DATE}.dump"
+          echo "Backup créé : backup-aoz-${DATE}.dump"
+          ls -lh "backup-aoz-${DATE}.dump"
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_number }}
+          path: backup-aoz-*.dump
+          retention-days: 90
