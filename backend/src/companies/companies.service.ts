@@ -56,6 +56,8 @@ export class CompaniesService {
   async seed() {
     const companies = [
       { name: 'AXA Assurance Maroc', code: 'AXA', email: 'contact@axa.ma', phone: '0522000000' },
+      { name: 'CAT Assurances', code: 'CAT', email: 'contact@cat.ma', phone: '0522000010' },
+      { name: 'Cover Edge', code: 'COVER_EDGE', email: 'contact@coveredge.ma', phone: '0522000011' },
       { name: 'Sanlam Maroc', code: 'SAM', email: 'contact@sanlam.ma', phone: '0522000001' },
       { name: 'Wafa Assurance', code: 'WAF', email: 'contact@wafa.ma', phone: '0522000002' },
       { name: 'RMA Assurance', code: 'RMA', email: 'contact@rma.ma', phone: '0522000003' },

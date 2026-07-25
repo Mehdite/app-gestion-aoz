@@ -54,10 +54,11 @@ export class ContractsController {
     @Query('page') page?: number, @Query('limit') limit?: number,
     @Query('search') search?: string, @Query('status') status?: string,
     @Query('type') type?: string, @Query('companyId') companyId?: string,
+    @Query('companyCode') companyCode?: string,
     @Query('clientId') clientId?: string, @Query('expiringIn') expiringIn?: number,
     @Query('mois') mois?: string,
   ) {
-    return this.service.findAll({ page, limit, search, status, type, companyId, clientId, expiringIn, mois });
+    return this.service.findAll({ page, limit, search, status, type, companyId, companyCode, clientId, expiringIn, mois });
   }
 
   @Get(':id')

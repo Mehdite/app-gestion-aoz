@@ -42,17 +42,18 @@ export class ContractsService {
 
   async findAll(params: {
     page?: number; limit?: number; search?: string; status?: string;
-    type?: string; companyId?: string; clientId?: string; agentId?: string; expiringIn?: number;
+    type?: string; companyId?: string; companyCode?: string; clientId?: string; agentId?: string; expiringIn?: number;
     mois?: string;
   }) {
     const { skip, take, page: p, limit: l } = paginate(params.page, params.limit);
-    const { search, status, type, companyId, clientId, agentId, expiringIn, mois } = params;
+    const { search, status, type, companyId, companyCode, clientId, agentId, expiringIn, mois } = params;
     const where: any = {};
-    if (status)    where.status = status;
-    if (type)      where.type = type;
-    if (companyId) where.companyId = companyId;
-    if (clientId)  where.clientId = clientId;
-    if (agentId)   where.agentId = agentId;
+    if (status)      where.status = status;
+    if (type)        where.type = type;
+    if (companyId)   where.companyId = companyId;
+    if (companyCode) where.company = { code: companyCode };
+    if (clientId)    where.clientId = clientId;
+    if (agentId)     where.agentId = agentId;
 
     if (expiringIn) {
       const future = new Date();

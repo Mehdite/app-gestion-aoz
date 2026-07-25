@@ -11,14 +11,16 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { label: 'Tableau de bord',      href: '/dashboard',   icon: LayoutDashboard, key: 'dashboard' },
-  { label: 'Clients',              href: '/clients',      icon: Users,           key: 'clients' },
-  { label: 'Prospects',            href: '/prospects',    icon: UserSearch,      key: 'prospects' },
-  { label: 'Production',           href: '/contrats',     icon: FileCheck,       key: 'contrats' },
-  { label: 'Quittances Impayées',  href: '/quittances',  icon: FileWarning,     key: 'quittances' },
-  { label: 'Sinistres',            href: '/sinistres',    icon: AlertTriangle,   key: 'sinistres' },
-  { label: 'Commissions',          href: '/commissions',  icon: TrendingUp,      key: 'commissions' },
-  { label: 'Rapports',             href: '/rapports',     icon: BarChart3,       key: 'rapports' },
+  { label: 'Tableau de bord',        href: '/dashboard',             icon: LayoutDashboard, key: 'dashboard' },
+  { label: 'Clients',                href: '/clients',               icon: Users,           key: 'clients' },
+  { label: 'Prospects',              href: '/prospects',             icon: UserSearch,      key: 'prospects' },
+  { label: 'Production AXA',         href: '/contrats',              icon: FileCheck,       key: 'contrats' },
+  { label: 'Production CAT',         href: '/production-cat',        icon: FileCheck,       key: 'production-cat' },
+  { label: 'Production Cover EDGE',  href: '/production-cover-edge', icon: FileCheck,       key: 'production-cover-edge' },
+  { label: 'Quittances Impayées',    href: '/quittances',            icon: FileWarning,     key: 'quittances' },
+  { label: 'Sinistres',              href: '/sinistres',             icon: AlertTriangle,   key: 'sinistres' },
+  { label: 'Commissions',            href: '/commissions',           icon: TrendingUp,      key: 'commissions' },
+  { label: 'Rapports',               href: '/rapports',              icon: BarChart3,       key: 'rapports' },
 ];
 
 const adminItems = [

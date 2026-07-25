@@ -11,13 +11,15 @@ import toast from 'react-hot-toast';
 const ROLES = ['ADMIN', 'AGENT'];
 
 const ALL_MODULES = [
-  { key: 'clients',     label: 'Clients' },
-  { key: 'prospects',   label: 'Prospects & CRM' },
-  { key: 'contrats',    label: 'Production' },
-  { key: 'quittances',  label: 'Quittances Impayées' },
-  { key: 'sinistres',   label: 'Sinistres' },
-  { key: 'commissions', label: 'Commissions' },
-  { key: 'rapports',    label: 'Rapports' },
+  { key: 'clients',               label: 'Clients' },
+  { key: 'prospects',             label: 'Prospects & CRM' },
+  { key: 'contrats',              label: 'Production AXA' },
+  { key: 'production-cat',        label: 'Production CAT' },
+  { key: 'production-cover-edge', label: 'Production Cover EDGE' },
+  { key: 'quittances',            label: 'Quittances Impayées' },
+  { key: 'sinistres',             label: 'Sinistres' },
+  { key: 'commissions',           label: 'Commissions' },
+  { key: 'rapports',              label: 'Rapports' },
 ];
 
 const roleColors: Record<string, string> = {
