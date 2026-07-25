@@ -201,7 +201,10 @@ export function ProductionPage({ companyCode, title }: Props) {
               {importing ? 'Importation...' : 'Importer'}
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-            <Link href="/contrats/nouveau" className="btn-primary flex items-center gap-2">
+            <Link
+              href={`/contrats/nouveau${companyCode ? `?company=${companyCode}` : ''}`}
+              className="btn-primary flex items-center gap-2"
+            >
               <Plus className="w-4 h-4" /> Saisir une production
             </Link>
           </div>

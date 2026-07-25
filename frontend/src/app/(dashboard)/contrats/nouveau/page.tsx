@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,8 +12,6 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Info, UserPlus, Users, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/* ------------------------------------------------------------------ */
-/* Schéma production                                                    */
 /* ------------------------------------------------------------------ */
 const schema = z.object({
   contractNumber: z.string().optional(),
@@ -29,9 +27,6 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-/* ------------------------------------------------------------------ */
-/* Constantes                                                           */
-/* ------------------------------------------------------------------ */
 const TYPES = [
   { value: 'AUTO',            label: 'Automobile' },
   { value: 'MOTO',            label: 'Moto' },
@@ -54,9 +49,13 @@ const FREQUENCIES = [
   { value: 'MONTHLY',     label: 'Mensuelle' },
 ];
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                              */
-/* ------------------------------------------------------------------ */
+/* Map code → route de retour */
+const REDIRECT_BY_CODE: Record<string, string> = {
+  AXA:        '/contrats',
+  CAT:        '/production-cat',
+  COVER_EDGE: '/production-cover-edge',
+};
+
 function addOneYear(dateStr: string) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -69,12 +68,12 @@ function fmt(n: number) {
 }
 
 /* ================================================================== */
-/* Page                                                                 */
-/* ================================================================== */
-export default function SaisirProductionPage() {
+function SaisirProductionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const companyCode = searchParams.get('company') ?? 'AXA';
+  const redirectPath = REDIRECT_BY_CODE[companyCode] ?? '/contrats';
 
-  /* ---------- données externes ---------- */
   const { data: clientsData } = useQuery({
     queryKey: ['clients-all'],
     queryFn: () => apiHelper.get<any>('/clients', { limit: 500 }),
@@ -85,17 +84,17 @@ export default function SaisirProductionPage() {
   });
   const clients   = (clientsData  as any)?.data ?? [];
   const companies = (companiesData as any)?.data ?? [];
-  const axaCompany = companies.find((c: any) => c.code === 'AXA') ?? companies[0];
-  const axaId      = axaCompany?.id ?? '';
 
-  /* ---------- mode client ---------- */
+  /* Compagnie sélectionnée via le paramètre URL */
+  const selectedCompany = companies.find((c: any) => c.code === companyCode) ?? null;
+  const selectedCompanyId = selectedCompany?.id ?? '';
+
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
   const [clientSearch, setClientSearch]     = useState('');
   const [showClientDrop, setShowClientDrop] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedClientObj, setSelectedClientObj] = useState<any>(null);
 
-  /* ---------- formulaire nouveau client ---------- */
   const [nc, setNc] = useState({
     type:        'INDIVIDUAL' as 'INDIVIDUAL' | 'COMPANY',
     firstName:   '',
@@ -111,7 +110,6 @@ export default function SaisirProductionPage() {
   const ncRef = useRef(nc);
   useEffect(() => { ncRef.current = nc; }, [nc]);
 
-  /* ---------- formulaire production ---------- */
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { frequency: 'ANNUAL', reduction: 0, primePaye: 0 },
@@ -135,12 +133,10 @@ export default function SaisirProductionPage() {
       }).slice(0, 8)
     : [];
 
-  /* ---------- auto-calcul échéance ---------- */
   useEffect(() => {
     if (effectiveDate) setValue('expiryDate', addOneYear(effectiveDate));
   }, [effectiveDate, setValue]);
 
-  /* ---------- validation nouveau client ---------- */
   function validateNewClient() {
     const errs: Record<string, string> = {};
     if (nc.type === 'INDIVIDUAL') {
@@ -154,17 +150,13 @@ export default function SaisirProductionPage() {
     return Object.keys(errs).length === 0;
   }
 
-  /* ---------- mutations ---------- */
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const currentNc = ncRef.current;
       let resolvedClientId = selectedClientId;
 
       if (clientMode === 'new') {
-        const clientPayload: any = {
-          type:  currentNc.type,
-          phone: currentNc.phone.trim(),
-        };
+        const clientPayload: any = { type: currentNc.type, phone: currentNc.phone.trim() };
         if (currentNc.type === 'INDIVIDUAL') {
           clientPayload.firstName = currentNc.firstName.trim();
           clientPayload.lastName  = currentNc.lastName.trim();
@@ -185,7 +177,7 @@ export default function SaisirProductionPage() {
       return apiHelper.post('/contracts', {
         ...data,
         clientId:  resolvedClientId,
-        companyId: axaId,
+        companyId: selectedCompanyId,
         primeHT:   data.primeTTC,
         taxes:     0,
         autoRenew: false,
@@ -193,7 +185,7 @@ export default function SaisirProductionPage() {
     },
     onSuccess: () => {
       toast.success('Production enregistrée' + (clientMode === 'new' ? ' — nouveau client créé' : ''));
-      router.push('/contrats');
+      router.push(redirectPath);
     },
     onError: (e: any) => {
       const msg = e?.response?.data?.message;
@@ -203,7 +195,7 @@ export default function SaisirProductionPage() {
   });
 
   const onSubmit = (data: FormData) => {
-    if (!axaId) { toast.error('Compagnie AXA introuvable'); return; }
+    if (!selectedCompanyId) { toast.error(`Compagnie ${companyCode} introuvable en base`); return; }
     if (clientMode === 'existing' && !selectedClientId) {
       toast.error('Veuillez sélectionner un client dans la liste');
       return;
@@ -212,42 +204,43 @@ export default function SaisirProductionPage() {
     mutation.mutate(data);
   };
 
-  /* ================================================================= */
+  const companyLabel = selectedCompany?.name ?? companyCode;
+
   return (
     <div>
-      <Header title="Saisir une production" />
+      <Header title={`Saisir une production — ${companyLabel}`} />
       <div className="p-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+        <button onClick={() => router.push(redirectPath)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
 
         <div className="flex items-start gap-3 mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
           <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <p>
-            Enregistrez votre production journalière AXA. Le contrat est émis dans l'application AXA —
-            cette saisie suit votre production et crée automatiquement le client s'il est nouveau.
+            Enregistrez votre production journalière <strong>{companyLabel}</strong>. Le contrat est émis dans
+            l&apos;application {companyCode} — cette saisie suit votre production et crée automatiquement le client s&apos;il est nouveau.
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-5">
 
-          {/* ── Identification ── */}
+          {/* Identification */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Identification</h2>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">N° police AXA</label>
+                <label className="label">N° police</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="Ex: AXA-2024-000123"
+                  placeholder={`Ex: ${companyCode}-2024-000123`}
                   {...register('contractNumber')}
                 />
                 <p className="text-xs text-gray-400 mt-1">Optionnel — auto-généré si vide</p>
               </div>
               <div>
-                <label className="label">Type d'assurance *</label>
+                <label className="label">Type d&apos;assurance *</label>
                 <select className="input" {...register('type')}>
                   <option value="">Sélectionner...</option>
                   {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -286,7 +279,6 @@ export default function SaisirProductionPage() {
                 </button>
               </div>
 
-              {/* Sélection client existant */}
               {clientMode === 'existing' && (
                 <div className="space-y-3">
                   <div className="relative">
@@ -335,12 +327,11 @@ export default function SaisirProductionPage() {
                     )}
                     {showClientDrop && clientSearch.length >= 1 && filteredClients.length === 0 && (
                       <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 px-3 py-3 text-sm text-gray-400">
-                        Aucun client trouvé — utilisez "Nouveau client"
+                        Aucun client trouvé — utilisez &quot;Nouveau client&quot;
                       </div>
                     )}
                   </div>
 
-                  {/* Fiche client sélectionné */}
                   {selectedClientObj && (
                     <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-100 rounded-lg">
                       <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
@@ -363,14 +354,12 @@ export default function SaisirProductionPage() {
                 </div>
               )}
 
-              {/* Formulaire nouveau client */}
               {clientMode === 'new' && (
                 <div className="border border-green-200 rounded-xl p-4 bg-green-50 space-y-3">
                   <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
                     Nouveau client — sera créé automatiquement
                   </p>
 
-                  {/* Type */}
                   <div className="flex gap-3">
                     {(['INDIVIDUAL', 'COMPANY'] as const).map((t) => (
                       <label key={t} className="flex items-center gap-2 cursor-pointer">
@@ -393,121 +382,55 @@ export default function SaisirProductionPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="label">Prénom *</label>
-                        <input
-                          type="text"
-                          className={cn('input', ncErrors.firstName && 'border-red-400')}
-                          value={nc.firstName}
-                          onChange={e => setNc(p => ({ ...p, firstName: e.target.value }))}
-                          placeholder="Mohammed"
-                        />
+                        <input type="text" className={cn('input', ncErrors.firstName && 'border-red-400')} value={nc.firstName} onChange={e => setNc(p => ({ ...p, firstName: e.target.value }))} placeholder="Mohammed" />
                         {ncErrors.firstName && <p className="text-xs text-red-500 mt-1">{ncErrors.firstName}</p>}
                       </div>
                       <div>
                         <label className="label">Nom *</label>
-                        <input
-                          type="text"
-                          className={cn('input', ncErrors.lastName && 'border-red-400')}
-                          value={nc.lastName}
-                          onChange={e => setNc(p => ({ ...p, lastName: e.target.value }))}
-                          placeholder="Alaoui"
-                        />
+                        <input type="text" className={cn('input', ncErrors.lastName && 'border-red-400')} value={nc.lastName} onChange={e => setNc(p => ({ ...p, lastName: e.target.value }))} placeholder="Alaoui" />
                         {ncErrors.lastName && <p className="text-xs text-red-500 mt-1">{ncErrors.lastName}</p>}
                       </div>
                       <div>
                         <label className="label">Téléphone *</label>
-                        <input
-                          type="tel"
-                          className={cn('input', ncErrors.phone && 'border-red-400')}
-                          value={nc.phone}
-                          onChange={e => setNc(p => ({ ...p, phone: e.target.value }))}
-                          placeholder="0612345678"
-                        />
+                        <input type="tel" className={cn('input', ncErrors.phone && 'border-red-400')} value={nc.phone} onChange={e => setNc(p => ({ ...p, phone: e.target.value }))} placeholder="0612345678" />
                         {ncErrors.phone && <p className="text-xs text-red-500 mt-1">{ncErrors.phone}</p>}
                       </div>
                       <div>
                         <label className="label">CIN</label>
-                        <input
-                          type="text"
-                          className="input"
-                          value={nc.cin}
-                          onChange={e => setNc(p => ({ ...p, cin: e.target.value }))}
-                          placeholder="AB123456"
-                        />
+                        <input type="text" className="input" value={nc.cin} onChange={e => setNc(p => ({ ...p, cin: e.target.value }))} placeholder="AB123456" />
                       </div>
                       <div>
                         <label className="label">Ville</label>
-                        <input
-                          type="text"
-                          className="input"
-                          value={nc.city}
-                          onChange={e => setNc(p => ({ ...p, city: e.target.value }))}
-                          placeholder="Oued Zem"
-                        />
+                        <input type="text" className="input" value={nc.city} onChange={e => setNc(p => ({ ...p, city: e.target.value }))} placeholder="Oued Zem" />
                       </div>
                       <div>
                         <label className="label">Email</label>
-                        <input
-                          type="email"
-                          className="input"
-                          value={nc.email}
-                          onChange={e => setNc(p => ({ ...p, email: e.target.value }))}
-                          placeholder="client@email.com"
-                        />
+                        <input type="email" className="input" value={nc.email} onChange={e => setNc(p => ({ ...p, email: e.target.value }))} placeholder="client@email.com" />
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2">
                         <label className="label">Raison sociale *</label>
-                        <input
-                          type="text"
-                          className={cn('input', ncErrors.companyName && 'border-red-400')}
-                          value={nc.companyName}
-                          onChange={e => setNc(p => ({ ...p, companyName: e.target.value }))}
-                          placeholder="SARL Transport Oued Zem"
-                        />
+                        <input type="text" className={cn('input', ncErrors.companyName && 'border-red-400')} value={nc.companyName} onChange={e => setNc(p => ({ ...p, companyName: e.target.value }))} placeholder="SARL Transport Oued Zem" />
                         {ncErrors.companyName && <p className="text-xs text-red-500 mt-1">{ncErrors.companyName}</p>}
                       </div>
                       <div>
                         <label className="label">Téléphone *</label>
-                        <input
-                          type="tel"
-                          className={cn('input', ncErrors.phone && 'border-red-400')}
-                          value={nc.phone}
-                          onChange={e => setNc(p => ({ ...p, phone: e.target.value }))}
-                          placeholder="0523456789"
-                        />
+                        <input type="tel" className={cn('input', ncErrors.phone && 'border-red-400')} value={nc.phone} onChange={e => setNc(p => ({ ...p, phone: e.target.value }))} placeholder="0523456789" />
                         {ncErrors.phone && <p className="text-xs text-red-500 mt-1">{ncErrors.phone}</p>}
                       </div>
                       <div>
                         <label className="label">ICE</label>
-                        <input
-                          type="text"
-                          className="input"
-                          value={nc.ice}
-                          onChange={e => setNc(p => ({ ...p, ice: e.target.value }))}
-                          placeholder="001234567000001"
-                        />
+                        <input type="text" className="input" value={nc.ice} onChange={e => setNc(p => ({ ...p, ice: e.target.value }))} placeholder="001234567000001" />
                       </div>
                       <div>
                         <label className="label">Ville</label>
-                        <input
-                          type="text"
-                          className="input"
-                          value={nc.city}
-                          onChange={e => setNc(p => ({ ...p, city: e.target.value }))}
-                          placeholder="Oued Zem"
-                        />
+                        <input type="text" className="input" value={nc.city} onChange={e => setNc(p => ({ ...p, city: e.target.value }))} placeholder="Oued Zem" />
                       </div>
                       <div>
                         <label className="label">Email</label>
-                        <input
-                          type="email"
-                          className="input"
-                          value={nc.email}
-                          onChange={e => setNc(p => ({ ...p, email: e.target.value }))}
-                          placeholder="contact@entreprise.ma"
-                        />
+                        <input type="email" className="input" value={nc.email} onChange={e => setNc(p => ({ ...p, email: e.target.value }))} placeholder="contact@entreprise.ma" />
                       </div>
                     </div>
                   )}
@@ -516,7 +439,7 @@ export default function SaisirProductionPage() {
             </div>
           </div>
 
-          {/* ── Primes ── */}
+          {/* Primes */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Primes (MAD)</h2>
 
@@ -581,32 +504,32 @@ export default function SaisirProductionPage() {
             </div>
           </div>
 
-          {/* ── Dates ── */}
+          {/* Dates */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Période de couverture</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Date d'effet *</label>
+                <label className="label">Date d&apos;effet *</label>
                 <input type="date" className="input" {...register('effectiveDate')} />
                 {errors.effectiveDate && <p className="text-xs text-red-500 mt-1">{errors.effectiveDate.message}</p>}
               </div>
               <div>
-                <label className="label">Date d'échéance</label>
+                <label className="label">Date d&apos;échéance</label>
                 <input type="date" className="input" {...register('expiryDate')} />
                 <p className="text-xs text-gray-400 mt-1">Auto-calculée (1 an)</p>
               </div>
             </div>
           </div>
 
-          {/* ── Notes ── */}
+          {/* Notes */}
           <div className="card p-6">
             <label className="label">Notes / Observations</label>
             <textarea rows={3} className="input" placeholder="Remarques éventuelles..." {...register('notes')} />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => router.back()} className="btn-secondary">Annuler</button>
-            <button type="submit" disabled={mutation.isPending || !axaId} className="btn-primary">
+            <button type="button" onClick={() => router.push(redirectPath)} className="btn-secondary">Annuler</button>
+            <button type="submit" disabled={mutation.isPending || !selectedCompanyId} className="btn-primary">
               {mutation.isPending
                 ? (clientMode === 'new' ? 'Création client...' : 'Enregistrement...')
                 : 'Enregistrer la production'}
@@ -615,5 +538,14 @@ export default function SaisirProductionPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+/* Suspense boundary requis par Next.js 14 pour useSearchParams */
+export default function SaisirProductionPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-gray-400">Chargement...</div>}>
+      <SaisirProductionForm />
+    </Suspense>
   );
 }
