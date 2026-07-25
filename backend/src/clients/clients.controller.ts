@@ -50,6 +50,10 @@ export class ClientsController {
   @ApiOperation({ summary: 'Archiver un client' })
   archive(@Param('id') id: string) { return this.service.archive(id); }
 
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Supprimer plusieurs clients' })
+  bulkDelete(@Body('ids') ids: string[]) { return this.service.bulkDelete(ids); }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer un client' })
   remove(@Param('id') id: string) { return this.service.remove(id); }

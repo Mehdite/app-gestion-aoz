@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiHelper } from '@/lib/api';
+import { api, apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency } from '@/lib/utils';
-import { Plus, Search, Filter, Eye, Edit, Archive, Trash2, Phone, Mail, Building2, User } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Archive, Trash2, Phone, Mail, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ClientModal } from './ClientModal';
 
@@ -17,6 +17,7 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['clients', { search, type, status, page }],
@@ -37,6 +38,20 @@ export default function ClientsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client supprimé'); },
     onError: () => toast.error('Erreur lors de la suppression'),
   });
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: (ids: string[]) => api.delete('/clients/bulk', { data: { ids } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedIds([]);
+      toast.success('Clients supprimés');
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const allSelected = clients.length > 0 && clients.every((c: any) => selectedIds.includes(c.id));
+  const toggleAll = () => setSelectedIds(allSelected ? [] : clients.map((c: any) => c.id));
+  const toggleOne = (id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
     <div>
@@ -72,12 +87,28 @@ export default function ClientsPage() {
           </button>
         </div>
 
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-700">{selectedIds.length} client{selectedIds.length > 1 ? 's' : ''} sélectionné{selectedIds.length > 1 ? 's' : ''}</span>
+            <button
+              onClick={() => { if (window.confirm(`Supprimer ${selectedIds.length} client(s) ? Cette action est irréversible.`)) bulkDeleteMut.mutate(selectedIds); }}
+              className="ml-auto px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Supprimer la sélection
+            </button>
+            <button onClick={() => setSelectedIds([])} className="text-sm text-red-500 hover:text-red-700">Annuler</button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
+                  <th className="table-header-cell w-8">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="rounded border-gray-300" />
+                  </th>
                   <th className="table-header-cell">Client</th>
                   <th className="table-header-cell">Type</th>
                   <th className="table-header-cell">Contact</th>
@@ -92,7 +123,7 @@ export default function ClientsPage() {
                 {isLoading && (
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
-                      {[...Array(8)].map((_, j) => (
+                      {[...Array(9)].map((_, j) => (
                         <td key={j} className="table-cell">
                           <div className="animate-pulse bg-gray-100 rounded h-4 w-24" />
                         </td>
@@ -101,10 +132,13 @@ export default function ClientsPage() {
                   ))
                 )}
                 {!isLoading && clients.length === 0 && (
-                  <tr><td colSpan={8} className="text-center py-10 text-gray-400 text-sm">Aucun client trouvé</td></tr>
+                  <tr><td colSpan={9} className="text-center py-10 text-gray-400 text-sm">Aucun client trouvé</td></tr>
                 )}
                 {clients.map((c: any) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={c.id} className={cn('hover:bg-gray-50 transition-colors', selectedIds.includes(c.id) && 'bg-red-50')}>
+                    <td className="table-cell">
+                      <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleOne(c.id)} className="rounded border-gray-300" />
+                    </td>
                     <td className="table-cell">
                       <div className="flex items-center gap-2">
                         <div className={cn(

@@ -102,6 +102,11 @@ export class ClientsService {
     return this.prisma.client.delete({ where: { id } });
   }
 
+  async bulkDelete(ids: string[]) {
+    const result = await this.prisma.client.deleteMany({ where: { id: { in: ids } } });
+    return { deleted: result.count };
+  }
+
   private async generateClientNumber(): Promise<string> {
     const count = await this.prisma.client.count();
     return `AOZ-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
