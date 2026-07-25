@@ -17,7 +17,15 @@ export class ContractsService {
       const taxes    = rest.taxes    ?? 0;
 
       const contract = await this.prisma.contract.create({
-        data: { ...rest, primeHT, taxes, contractNumber, agentId },
+        data: {
+          ...rest,
+          primeHT,
+          taxes,
+          contractNumber,
+          agentId,
+          effectiveDate: new Date(rest.effectiveDate),
+          expiryDate:    new Date(rest.expiryDate),
+        },
         include: { client: true, company: true, product: true },
       });
 
