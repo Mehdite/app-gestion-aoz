@@ -1,7 +1,7 @@
 import { IsString, IsNumber, IsDateString, IsOptional, IsBoolean, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-const INSURANCE_TYPES = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','OTHER'];
+const INSURANCE_TYPES = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','WORK_ACCIDENT','RC_EXPLOITATION','RC_PRO','OTHER'];
 const FREQUENCIES     = ['MONTHLY','QUARTERLY','SEMI_ANNUAL','ANNUAL'];
 
 export class CreateContractDto {

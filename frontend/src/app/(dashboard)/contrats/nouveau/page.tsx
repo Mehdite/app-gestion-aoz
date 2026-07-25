@@ -85,7 +85,8 @@ export default function SaisirProductionPage() {
   });
   const clients   = (clientsData  as any)?.data ?? [];
   const companies = (companiesData as any)?.data ?? [];
-  const axaId     = companies[0]?.id ?? '';
+  const axaCompany = companies.find((c: any) => c.code === 'AXA') ?? companies[0];
+  const axaId      = axaCompany?.id ?? '';
 
   /* ---------- mode client ---------- */
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
@@ -194,7 +195,9 @@ export default function SaisirProductionPage() {
       router.push('/contrats');
     },
     onError: (e: any) => {
-      toast.error(e?.response?.data?.message ?? e?.message ?? "Erreur lors de l'enregistrement");
+      const msg = e?.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(', ') : (msg ?? e?.message ?? "Erreur lors de l'enregistrement");
+      toast.error(text);
     },
   });
 
@@ -285,6 +288,7 @@ export default function SaisirProductionPage() {
               {/* Sélection client existant */}
               {clientMode === 'existing' && (
                 <div className="space-y-3">
+                  <input type="hidden" {...register('clientId')} />
                   <div className="relative">
                     <input
                       type="text"
