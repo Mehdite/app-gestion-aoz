@@ -23,8 +23,14 @@ type EditState = {
   notes: string;
 };
 
+/* Route du formulaire de saisie par compagnie */
+const NOUVEAU_PATH: Record<string, string> = {
+  AXA:        '/contrats/nouveau',
+  CAT:        '/production-cat/nouveau',
+  COVER_EDGE: '/production-cover-edge/nouveau',
+};
+
 interface Props {
-  /** Code de la compagnie à filtrer (ex: 'AXA', 'CAT', 'COVER_EDGE'). Undefined = toutes. */
   companyCode?: string;
   title: string;
 }
@@ -202,7 +208,7 @@ export function ProductionPage({ companyCode, title }: Props) {
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
             <Link
-              href={`/contrats/nouveau${companyCode ? `?company=${companyCode}` : ''}`}
+              href={companyCode ? (NOUVEAU_PATH[companyCode] ?? '/contrats/nouveau') : '/contrats/nouveau'}
               className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> Saisir une production
