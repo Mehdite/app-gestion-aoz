@@ -25,20 +25,33 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-const TYPES = [
-  { value: 'AUTO',            label: 'Automobile' },
-  { value: 'MOTO',            label: 'Moto' },
-  { value: 'HOME',            label: 'Habitation' },
-  { value: 'HEALTH',          label: 'Santé' },
-  { value: 'PROFESSIONAL',    label: 'Multirisque Pro' },
-  { value: 'DECENNIAL',       label: 'Décennale' },
-  { value: 'TRANSPORT',       label: 'Transport' },
-  { value: 'LIFE',            label: 'Vie' },
-  { value: 'WORK_ACCIDENT',   label: 'Accident de travail' },
-  { value: 'RC_EXPLOITATION', label: 'RC Exploitation' },
-  { value: 'RC_PRO',          label: 'RC Pro' },
-  { value: 'OTHER',           label: 'Autre' },
-];
+const TYPES_BY_COMPANY: Record<string, { value: string; label: string }[]> = {
+  AXA: [
+    { value: 'AUTO',            label: 'Automobile' },
+    { value: 'MOTO',            label: 'Moto' },
+    { value: 'HOME',            label: 'Habitation' },
+    { value: 'HEALTH',          label: 'Santé' },
+    { value: 'PROFESSIONAL',    label: 'Multirisque Pro' },
+    { value: 'DECENNIAL',       label: 'Décennale' },
+    { value: 'TRANSPORT',       label: 'Transport' },
+    { value: 'LIFE',            label: 'Vie' },
+    { value: 'WORK_ACCIDENT',   label: 'Accident de travail' },
+    { value: 'RC_EXPLOITATION', label: 'RC Exploitation' },
+    { value: 'RC_PRO',          label: 'RC Pro' },
+    { value: 'OTHER',           label: 'Autre' },
+  ],
+  CAT: [
+    { value: 'PETIT_TAXI', label: 'Petit Taxi' },
+    { value: 'GRAND_TAXI', label: 'Grand Taxi' },
+    { value: 'TRIPORTEUR', label: 'Triporteur' },
+    { value: 'FRONTIERE',  label: 'Frontière' },
+  ],
+  COVER_EDGE: [
+    { value: 'VOYAGE',              label: 'Assurance de voyage' },
+    { value: 'ASSISTANCE',          label: 'Assistance' },
+    { value: 'ASSISTANCE_MEDICALE', label: 'Assistance Médicale' },
+  ],
+};
 
 const FREQUENCIES = [
   { value: 'ANNUAL',      label: 'Annuelle' },
@@ -81,6 +94,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   const selectedCompany   = companies.find((c: any) => c.code === companyCode) ?? null;
   const selectedCompanyId = selectedCompany?.id ?? '';
   const companyLabel      = selectedCompany?.name ?? companyCode;
+  const types             = TYPES_BY_COMPANY[companyCode] ?? TYPES_BY_COMPANY.AXA;
 
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
   const [clientSearch, setClientSearch]     = useState('');
@@ -216,7 +230,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
                 <label className="label">Type d&apos;assurance *</label>
                 <select className="input" {...register('type')}>
                   <option value="">Sélectionner...</option>
-                  {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {types.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type.message}</p>}
               </div>

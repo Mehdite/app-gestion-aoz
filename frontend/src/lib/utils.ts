@@ -78,6 +78,7 @@ export const statusLabels: Record<string, string> = {
 };
 
 export const insuranceTypeLabels: Record<string, string> = {
+  // AXA
   AUTO: 'Automobile',
   MOTO: 'Moto',
   HOME: 'Habitation',
@@ -90,6 +91,15 @@ export const insuranceTypeLabels: Record<string, string> = {
   RC_EXPLOITATION: 'RC Exploitation',
   RC_PRO: 'RC Pro',
   OTHER: 'Autre',
+  // CAT
+  PETIT_TAXI: 'Petit Taxi',
+  GRAND_TAXI: 'Grand Taxi',
+  TRIPORTEUR: 'Triporteur',
+  FRONTIERE: 'Frontière',
+  // Cover EDGE
+  VOYAGE: 'Assurance de voyage',
+  ASSISTANCE: 'Assistance',
+  ASSISTANCE_MEDICALE: 'Assistance Médicale',
 };
 
 export const statusColor: Record<string, string> = {

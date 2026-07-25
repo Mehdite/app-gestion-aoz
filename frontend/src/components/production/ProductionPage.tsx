@@ -10,7 +10,12 @@ import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, 
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
-const TYPE_OPTIONS   = ['', 'AUTO', 'MOTO', 'HOME', 'HEALTH', 'PROFESSIONAL', 'DECENNIAL', 'TRANSPORT', 'LIFE', 'WORK_ACCIDENT', 'RC_EXPLOITATION', 'RC_PRO'];
+
+const TYPE_OPTIONS_BY_COMPANY: Record<string, string[]> = {
+  AXA:        ['AUTO', 'MOTO', 'HOME', 'HEALTH', 'PROFESSIONAL', 'DECENNIAL', 'TRANSPORT', 'LIFE', 'WORK_ACCIDENT', 'RC_EXPLOITATION', 'RC_PRO', 'OTHER'],
+  CAT:        ['PETIT_TAXI', 'GRAND_TAXI', 'TRIPORTEUR', 'FRONTIERE'],
+  COVER_EDGE: ['VOYAGE', 'ASSISTANCE', 'ASSISTANCE_MEDICALE'],
+};
 
 type ImportResult = { imported: number; errors: string[] };
 
@@ -36,6 +41,7 @@ interface Props {
 }
 
 export function ProductionPage({ companyCode, title }: Props) {
+  const typeOptions = companyCode ? (TYPE_OPTIONS_BY_COMPANY[companyCode] ?? []) : Object.values(TYPE_OPTIONS_BY_COMPANY).flat();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -181,7 +187,7 @@ export function ProductionPage({ companyCode, title }: Props) {
             </select>
             <select className="input w-44" value={type} onChange={(e) => setType(e.target.value)}>
               <option value="">Tous types</option>
-              {TYPE_OPTIONS.filter(Boolean).map((t) => (
+              {typeOptions.map((t) => (
                 <option key={t} value={t}>{insuranceTypeLabels[t]}</option>
               ))}
             </select>
