@@ -98,11 +98,50 @@ export class ClientsService {
     return { totalContracts, activeContracts, totalClaims, totalPaid: totalPaid._sum.amount ?? 0 };
   }
 
+  private async deleteClientRecords(clientIds: string[]) {
+    if (clientIds.length === 0) return;
+
+    const contracts = await this.prisma.contract.findMany({ where: { clientId: { in: clientIds } }, select: { id: true } });
+    const contractIds = contracts.map(c => c.id);
+
+    const quotes = await this.prisma.quote.findMany({ where: { clientId: { in: clientIds } }, select: { id: true } });
+    const quoteIds = quotes.map(q => q.id);
+
+    const claims = await this.prisma.claim.findMany({ where: { clientId: { in: clientIds } }, select: { id: true } });
+    const claimIds = claims.map(c => c.id);
+
+    /* Documents — toutes les FK possibles */
+    const docOr: any[] = [{ clientId: { in: clientIds } }];
+    if (contractIds.length > 0) docOr.push({ contractId: { in: contractIds } });
+    if (quoteIds.length > 0)    docOr.push({ quoteId:    { in: quoteIds    } });
+    if (claimIds.length > 0)    docOr.push({ claimId:    { in: claimIds    } });
+    await this.prisma.document.deleteMany({ where: { OR: docOr } });
+
+    await this.prisma.claim.deleteMany({ where: { clientId: { in: clientIds } } });
+
+    if (contractIds.length > 0) {
+      await this.prisma.renewalAlert.deleteMany({ where: { contractId: { in: contractIds } } });
+      await this.prisma.contractHistory.deleteMany({ where: { contractId: { in: contractIds } } });
+      await this.prisma.commission.deleteMany({ where: { contractId: { in: contractIds } } });
+      await this.prisma.payment.deleteMany({ where: { contractId: { in: contractIds } } });
+      await this.prisma.contract.deleteMany({ where: { clientId: { in: clientIds } } });
+    }
+
+    if (quoteIds.length > 0) {
+      await this.prisma.quote.deleteMany({ where: { clientId: { in: clientIds } } });
+    }
+
+    await this.prisma.payment.deleteMany({ where: { clientId: { in: clientIds } } });
+    await this.prisma.notification.deleteMany({ where: { clientId: { in: clientIds } } });
+  }
+
   async remove(id: string) {
+    await this.deleteClientRecords([id]);
     return this.prisma.client.delete({ where: { id } });
   }
 
   async bulkDelete(ids: string[]) {
+    await this.deleteClientRecords(ids);
     const result = await this.prisma.client.deleteMany({ where: { id: { in: ids } } });
     return { deleted: result.count };
   }

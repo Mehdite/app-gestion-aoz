@@ -137,11 +137,26 @@ export class ContractsService {
     });
   }
 
+  private async deleteContractRecords(contractIds: string[]) {
+    if (contractIds.length === 0) return;
+    const claims = await this.prisma.claim.findMany({ where: { contractId: { in: contractIds } }, select: { id: true } });
+    const claimIds = claims.map(c => c.id);
+    if (claimIds.length > 0) await this.prisma.document.deleteMany({ where: { claimId: { in: claimIds } } });
+    await this.prisma.document.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.claim.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.renewalAlert.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.contractHistory.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.commission.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.payment.deleteMany({ where: { contractId: { in: contractIds } } });
+  }
+
   async remove(id: string) {
+    await this.deleteContractRecords([id]);
     return this.prisma.contract.delete({ where: { id } });
   }
 
   async bulkDelete(ids: string[]) {
+    await this.deleteContractRecords(ids);
     const result = await this.prisma.contract.deleteMany({ where: { id: { in: ids } } });
     return { deleted: result.count };
   }
