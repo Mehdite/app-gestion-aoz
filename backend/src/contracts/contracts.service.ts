@@ -10,17 +10,26 @@ export class ContractsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateContractDto, agentId: string) {
-    const contractNumber = dto.contractNumber || await this.generateContractNumber(dto.type);
-    const { contractNumber: _cn, ...rest } = dto;
-    const primeHT  = rest.primeHT  ?? rest.primeTTC;
-    const taxes    = rest.taxes    ?? 0;
-    const contract = await this.prisma.contract.create({
-      data: { ...rest, primeHT, taxes, contractNumber, agentId },
-      include: { client: true, company: true, product: true },
-    });
-    await this.createRenewalAlerts(contract.id, new Date(dto.expiryDate));
-    await this.createCommission(contract);
-    return contract;
+    try {
+      const contractNumber = dto.contractNumber || await this.generateContractNumber(dto.type);
+      const { contractNumber: _cn, ...rest } = dto;
+      const primeHT  = rest.primeHT  ?? rest.primeTTC;
+      const taxes    = rest.taxes    ?? 0;
+
+      const contract = await this.prisma.contract.create({
+        data: { ...rest, primeHT, taxes, contractNumber, agentId },
+        include: { client: true, company: true, product: true },
+      });
+
+      /* Ces étapes sont secondaires — elles ne doivent pas faire échouer la création */
+      this.createRenewalAlerts(contract.id, new Date(dto.expiryDate)).catch(() => {});
+      this.createCommission(contract).catch(() => {});
+
+      return contract;
+    } catch (err: any) {
+      const detail = err?.meta?.cause ?? err?.message ?? 'Erreur Prisma inconnue';
+      throw new BadRequestException(`Impossible de créer le contrat : ${detail}`);
+    }
   }
 
   async findAll(params: {
@@ -150,6 +159,7 @@ export class ContractsService {
     const days = [60, 30, 15, 7, 3];
     await this.prisma.renewalAlert.createMany({
       data: days.map((d) => ({ contractId, daysBeforeExpiry: d })),
+      skipDuplicates: true,
     });
   }
 
