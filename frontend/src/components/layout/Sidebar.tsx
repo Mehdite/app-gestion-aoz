@@ -6,8 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard, Users, UserSearch, FileCheck,
-  AlertTriangle, TrendingUp, FileWarning,
-  BarChart3, Settings, LogOut, Shield, Users2,
+  AlertTriangle, BarChart3, Settings, LogOut, Shield, Users2,
 } from 'lucide-react';
 
 const navItems = [
@@ -17,9 +16,7 @@ const navItems = [
   { label: 'Production AXA',         href: '/contrats',              icon: FileCheck,       key: 'contrats' },
   { label: 'Production CAT',         href: '/production-cat',        icon: FileCheck,       key: 'production-cat' },
   { label: 'Production Cover EDGE',  href: '/production-cover-edge', icon: FileCheck,       key: 'production-cover-edge' },
-  { label: 'Quittances Impayées',    href: '/quittances',            icon: FileWarning,     key: 'quittances' },
   { label: 'Sinistres',              href: '/sinistres',             icon: AlertTriangle,   key: 'sinistres' },
-  { label: 'Commissions',            href: '/commissions',           icon: TrendingUp,      key: 'commissions' },
   { label: 'Rapports',               href: '/rapports',              icon: BarChart3,       key: 'rapports' },
 ];
 

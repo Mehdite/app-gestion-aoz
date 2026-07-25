@@ -16,9 +16,7 @@ const ALL_MODULES = [
   { key: 'contrats',              label: 'Production AXA' },
   { key: 'production-cat',        label: 'Production CAT' },
   { key: 'production-cover-edge', label: 'Production Cover EDGE' },
-  { key: 'quittances',            label: 'Quittances Impayées' },
   { key: 'sinistres',             label: 'Sinistres' },
-  { key: 'commissions',           label: 'Commissions' },
   { key: 'rapports',              label: 'Rapports' },
 ];
 
