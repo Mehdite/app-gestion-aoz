@@ -186,7 +186,7 @@ model Quote {
 
 model Contract {
   id                String    @id @default(cuid())
-  contractNumber    String    @unique
+  contractNumber    String
   status            String    @default("ACTIVE")  // ACTIVE | EXPIRED | SUSPENDED | CANCELLED | PENDING_RENEWAL
   type              String
 
@@ -238,6 +238,7 @@ model Contract {
   @@index([clientId])
   @@index([status])
   @@index([expiryDate])
+  @@index([contractNumber])
   @@map("contracts")
 }
 

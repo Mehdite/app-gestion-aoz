@@ -164,16 +164,17 @@ export class ContractsService {
 
   async renew(id: string, userId: string) {
     const contract = await this.findOne(id);
-    const newExpiry = new Date(contract.expiryDate);
-    newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-    const contractNumber = await this.generateContractNumber(contract.type);
+    const newEffective = contract.expiryDate;
+    const newExpiry = this.computeExpiryDate(newEffective, contract.frequency);
     return this.prisma.contract.create({
       data: {
-        contractNumber, status: 'ACTIVE', type: contract.type,
+        /* Même n° police que le contrat d'origine — une police se renouvelle, elle ne change pas de numéro */
+        contractNumber: contract.contractNumber,
+        status: 'ACTIVE', type: contract.type,
         clientId: contract.clientId, companyId: contract.companyId,
         productId: contract.productId, agentId: userId,
         primeTTC: contract.primeTTC, primeHT: contract.primeHT, taxes: contract.taxes,
-        frequency: contract.frequency, effectiveDate: contract.expiryDate,
+        frequency: contract.frequency, effectiveDate: newEffective,
         expiryDate: newExpiry, autoRenew: contract.autoRenew, renewedAt: new Date(),
         renewedFromId: contract.id,
       },
@@ -207,6 +208,19 @@ export class ContractsService {
   private async generateContractNumber(type: string): Promise<string> {
     const count = await this.prisma.contract.count();
     return `${type.substring(0, 3).toUpperCase()}-${new Date().getFullYear()}-${String(count + 1).padStart(6, '0')}`;
+  }
+
+  private static readonly MONTHS_BY_FREQUENCY: Record<string, number> = {
+    MONTHLY: 1, QUARTERLY: 3, SEMI_ANNUAL: 6, ANNUAL: 12,
+  };
+
+  /** Convention assurance : échéance = date d'effet + période - 1 jour */
+  private computeExpiryDate(effectiveDate: Date, frequency: string): Date {
+    const months = ContractsService.MONTHS_BY_FREQUENCY[frequency] ?? 12;
+    const d = new Date(effectiveDate);
+    d.setUTCMonth(d.getUTCMonth() + months);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d;
   }
 
   /* ---------------------------------------------------------------- */
