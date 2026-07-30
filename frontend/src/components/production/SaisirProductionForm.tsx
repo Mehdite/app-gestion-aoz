@@ -60,11 +60,23 @@ const FREQUENCIES = [
   { value: 'MONTHLY',     label: 'Mensuelle' },
 ];
 
-function addOneYear(dateStr: string) {
+const MONTHS_BY_FREQUENCY: Record<string, number> = {
+  MONTHLY:     1,
+  QUARTERLY:   3,
+  SEMI_ANNUAL: 6,
+  ANNUAL:      12,
+};
+
+/** Convention assurance : échéance = date d'effet + période - 1 jour
+ *  (ex: effet 30/07/2026, trimestrielle → 29/10/2026, pas 30/10/2026) */
+function computeExpiryDate(dateStr: string, frequency: string) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().split('T')[0];
+  const months = MONTHS_BY_FREQUENCY[frequency] ?? 12;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCMonth(date.getUTCMonth() + months);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().split('T')[0];
 }
 
 function fmt(n: number) {
@@ -120,6 +132,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   const reduction     = Number(watch('reduction')) || 0;
   const primePaye     = Number(watch('primePaye')) || 0;
   const effectiveDate = watch('effectiveDate');
+  const frequency     = watch('frequency');
   const primeNette    = Math.max(0, primeTTC - reduction);
   const resteAPayer   = Math.max(0, primeNette - primePaye);
 
@@ -134,8 +147,8 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
     : [];
 
   useEffect(() => {
-    if (effectiveDate) setValue('expiryDate', addOneYear(effectiveDate));
-  }, [effectiveDate, setValue]);
+    if (effectiveDate) setValue('expiryDate', computeExpiryDate(effectiveDate, frequency));
+  }, [effectiveDate, frequency, setValue]);
 
   function validateNewClient() {
     const errs: Record<string, string> = {};
@@ -444,7 +457,9 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
               <div>
                 <label className="label">Date d&apos;échéance</label>
                 <input type="date" className="input" {...register('expiryDate')} />
-                <p className="text-xs text-gray-400 mt-1">Auto-calculée (1 an)</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Auto-calculée selon la fréquence ({FREQUENCIES.find(f => f.value === frequency)?.label.toLowerCase() ?? '1 an'}, modifiable)
+                </p>
               </div>
             </div>
           </div>
