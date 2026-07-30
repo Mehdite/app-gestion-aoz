@@ -61,6 +61,21 @@ export class ContractsController {
     return this.service.findAll({ page, limit, search, status, type, companyId, companyCode, clientId, expiringIn, mois });
   }
 
+  @Get('excel')
+  @ApiOperation({ summary: 'Télécharger la production (filtrée) en Excel' })
+  async downloadExcel(
+    @Query('search') search?: string, @Query('status') status?: string,
+    @Query('type') type?: string, @Query('companyCode') companyCode?: string,
+    @Query('mois') mois?: string,
+    @Res() res?: Response,
+  ) {
+    const buffer = await this.service.generateProductionExcel({ search, status, type, companyCode, mois });
+    const suffix = mois ? `-${mois}` : '';
+    res!.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res!.setHeader('Content-Disposition', `attachment; filename="production${suffix}.xlsx"`);
+    res!.send(buffer);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Détails d\'un contrat' })
   findOne(@Param('id') id: string) { return this.service.findOne(id); }

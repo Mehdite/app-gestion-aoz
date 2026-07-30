@@ -4,6 +4,7 @@ import { paginate } from '../common/pagination';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ContractsService {
@@ -40,12 +41,10 @@ export class ContractsService {
     }
   }
 
-  async findAll(params: {
-    page?: number; limit?: number; search?: string; status?: string;
-    type?: string; companyId?: string; companyCode?: string; clientId?: string; agentId?: string; expiringIn?: number;
-    mois?: string;
+  private buildWhere(params: {
+    search?: string; status?: string; type?: string; companyId?: string; companyCode?: string;
+    clientId?: string; agentId?: string; expiringIn?: number; mois?: string;
   }) {
-    const { skip, take, page: p, limit: l } = paginate(params.page, params.limit);
     const { search, status, type, companyId, companyCode, clientId, agentId, expiringIn, mois } = params;
     const where: any = {};
     if (status)      where.status = status;
@@ -78,6 +77,17 @@ export class ContractsService {
       ];
     }
 
+    return where;
+  }
+
+  async findAll(params: {
+    page?: number; limit?: number; search?: string; status?: string;
+    type?: string; companyId?: string; companyCode?: string; clientId?: string; agentId?: string; expiringIn?: number;
+    mois?: string;
+  }) {
+    const { skip, take, page: p, limit: l } = paginate(params.page, params.limit);
+    const where = this.buildWhere(params);
+
     const [data, total] = await Promise.all([
       this.prisma.contract.findMany({
         where, skip, take, orderBy: { contractNumber: 'asc' },
@@ -93,6 +103,82 @@ export class ContractsService {
     ]);
 
     return { data, meta: { total, page: p, limit: l, totalPages: Math.ceil(total / l) } };
+  }
+
+  async generateProductionExcel(params: {
+    search?: string; status?: string; type?: string; companyCode?: string; mois?: string;
+  }): Promise<Buffer> {
+    const where = this.buildWhere(params);
+    const contracts = await this.prisma.contract.findMany({
+      where, orderBy: { contractNumber: 'asc' },
+      include: {
+        client:  { select: { firstName: true, lastName: true, companyName: true, type: true, phone: true } },
+        company: { select: { name: true, code: true } },
+      },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Assurances Oued Zem';
+    const sheet = workbook.addWorksheet('Production');
+
+    const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF091F3D' } };
+    const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+
+    sheet.columns = [
+      { header: 'N° Police',       key: 'contractNumber', width: 18 },
+      { header: 'Client',          key: 'client',         width: 25 },
+      { header: 'Téléphone',       key: 'phone',          width: 14 },
+      { header: 'Compagnie',       key: 'company',        width: 14 },
+      { header: 'Type',            key: 'type',           width: 16 },
+      { header: 'Prime TTC (MAD)', key: 'primeTTC',       width: 16 },
+      { header: 'Réduction (MAD)', key: 'reduction',      width: 16 },
+      { header: 'Encaissé (MAD)',  key: 'primePaye',      width: 16 },
+      { header: 'Reste (MAD)',     key: 'reste',          width: 16 },
+      { header: 'Date effet',      key: 'effectiveDate',  width: 14 },
+      { header: 'Échéance',        key: 'expiryDate',     width: 14 },
+      { header: 'Statut',          key: 'status',         width: 14 },
+    ];
+
+    sheet.getRow(1).eachCell((cell) => {
+      cell.fill = headerFill;
+      cell.font = headerFont;
+      cell.alignment = { horizontal: 'center' };
+    });
+
+    let sumTTC = 0, sumReduction = 0, sumPaye = 0, sumReste = 0;
+
+    contracts.forEach((c) => {
+      const ttc       = Number(c.primeTTC);
+      const reduction = Number(c.reduction);
+      const primePaye = Number(c.primePaye);
+      const reste     = Math.max(0, ttc - reduction - primePaye);
+      sumTTC += ttc; sumReduction += reduction; sumPaye += primePaye; sumReste += reste;
+
+      sheet.addRow({
+        contractNumber: c.contractNumber,
+        client: c.client.type === 'INDIVIDUAL'
+          ? `${c.client.firstName ?? ''} ${c.client.lastName ?? ''}`.trim()
+          : c.client.companyName,
+        phone:         c.client.phone,
+        company:       c.company.code,
+        type:          c.type,
+        primeTTC:      ttc,
+        reduction,
+        primePaye,
+        reste,
+        effectiveDate: new Date(c.effectiveDate).toLocaleDateString('fr-MA'),
+        expiryDate:    new Date(c.expiryDate).toLocaleDateString('fr-MA'),
+        status:        c.status,
+      });
+    });
+
+    const totalRow = sheet.addRow({
+      contractNumber: `TOTAL (${contracts.length})`,
+      primeTTC: sumTTC, reduction: sumReduction, primePaye: sumPaye, reste: sumReste,
+    });
+    totalRow.font = { bold: true };
+
+    return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
   async findOne(id: string) {

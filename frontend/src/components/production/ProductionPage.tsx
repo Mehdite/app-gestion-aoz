@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency, insuranceTypeLabels } from '@/lib/utils';
-import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save, Trash2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
@@ -52,6 +52,7 @@ export function ProductionPage({ companyCode, title }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing,    setImporting]    = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [downloading,  setDownloading]  = useState(false);
 
   const [editing, setEditing] = useState<EditState | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -118,6 +119,26 @@ export function ProductionPage({ companyCode, title }: Props) {
       URL.revokeObjectURL(url);
     } catch {
       toast.error('Erreur téléchargement du modèle');
+    }
+  }
+
+  async function downloadProduction() {
+    setDownloading(true);
+    try {
+      const res = await api.get('/contracts/excel', {
+        responseType: 'blob',
+        params: { search, status, type, companyCode: companyCode || undefined, mois: mois || undefined },
+      });
+      const url  = URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = `production${mois ? `-${mois}` : ''}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Erreur téléchargement de la production');
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -213,6 +234,15 @@ export function ProductionPage({ companyCode, title }: Props) {
               {importing ? 'Importation...' : 'Importer'}
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+            <button
+              onClick={downloadProduction}
+              disabled={downloading}
+              className="btn-secondary flex items-center gap-2"
+              title="Télécharger la production affichée (selon les filtres actifs) en Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {downloading ? 'Téléchargement...' : 'Télécharger'}
+            </button>
             <Link
               href={companyCode ? (NOUVEAU_PATH[companyCode] ?? '/contrats/nouveau') : '/contrats/nouveau'}
               className="btn-primary flex items-center gap-2"
