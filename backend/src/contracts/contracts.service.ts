@@ -175,6 +175,7 @@ export class ContractsService {
         primeTTC: contract.primeTTC, primeHT: contract.primeHT, taxes: contract.taxes,
         frequency: contract.frequency, effectiveDate: contract.expiryDate,
         expiryDate: newExpiry, autoRenew: contract.autoRenew, renewedAt: new Date(),
+        renewedFromId: contract.id,
       },
     });
   }

@@ -50,6 +50,49 @@ export class RenewalsService {
     this.logger.log('Renewal alerts processed');
   }
 
+  async getRenewals(month?: string, companyCode?: string) {
+    const now = new Date();
+    const [y, m] = month
+      ? month.split('-').map(Number)
+      : [now.getFullYear(), now.getMonth() + 1];
+    const start = new Date(y, m - 1, 1);
+    const end   = new Date(y, m, 1);
+
+    const where: any = {
+      expiryDate: { gte: start, lt: end },
+      status: { not: 'CANCELLED' },
+    };
+    if (companyCode) where.company = { code: companyCode };
+
+    const contracts = await this.prisma.contract.findMany({
+      where,
+      orderBy: { expiryDate: 'asc' },
+      include: {
+        client: {
+          select: {
+            firstName: true, lastName: true, companyName: true,
+            type: true, phone: true, phone2: true,
+          },
+        },
+        company: { select: { name: true, code: true } },
+        product: { select: { name: true } },
+        renewedTo: { select: { id: true, contractNumber: true, createdAt: true } },
+      },
+    });
+
+    const total   = contracts.length;
+    const renewed = contracts.filter((c) => c.renewedTo).length;
+    const overdue = contracts.filter((c) => !c.renewedTo && c.expiryDate < now).length;
+    const pending = total - renewed - overdue;
+    const rate    = total > 0 ? Math.round((renewed / total) * 100) : 0;
+
+    return {
+      period: `${y}-${String(m).padStart(2, '0')}`,
+      stats: { total, renewed, pending, overdue, rate },
+      contracts,
+    };
+  }
+
   private async sendRenewalNotification(alert: any, days: number) {
     const { contract } = alert;
     const clientName = contract.client.firstName

@@ -217,6 +217,10 @@ model Contract {
   renewedAt         DateTime?
   cancelledAt       DateTime?
 
+  renewedFromId     String?   @unique
+  renewedFrom       Contract? @relation("ContractRenewal", fields: [renewedFromId], references: [id])
+  renewedTo         Contract? @relation("ContractRenewal")
+
   details           String?   // JSON serialized
   notes             String?
   autoRenew         Boolean   @default(true)

@@ -16,6 +16,7 @@ const ALL_MODULES = [
   { key: 'contrats',              label: 'Production AXA' },
   { key: 'production-cat',        label: 'Production CAT' },
   { key: 'production-cover-edge', label: 'Production Cover EDGE' },
+  { key: 'renouvellements',       label: 'Renouvellements' },
   { key: 'sinistres',             label: 'Sinistres' },
   { key: 'rapports',              label: 'Rapports' },
 ];
