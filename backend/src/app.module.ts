@@ -20,6 +20,9 @@ import { PaymentsModule } from './payments/payments.module';
 import { RenewalsModule } from './renewals/renewals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { QuittancesModule } from './quittances/quittances.module';
+import { RistournesModule } from './ristournes/ristournes.module';
+import { VersementsModule } from './versements/versements.module';
+import { ChargesModule } from './charges/charges.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { QuittancesModule } from './quittances/quittances.module';
     RenewalsModule,
     DashboardModule,
     QuittancesModule,
+    RistournesModule,
+    VersementsModule,
+    ChargesModule,
   ],
 })
 export class AppModule {}

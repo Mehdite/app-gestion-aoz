@@ -17,6 +17,9 @@ const ALL_MODULES = [
   { key: 'production-cat',        label: 'Production CAT' },
   { key: 'production-cover-edge', label: 'Production Cover EDGE' },
   { key: 'renouvellements',       label: 'Renouvellements' },
+  { key: 'ristournes',            label: 'Ristournes' },
+  { key: 'versements',            label: 'Versements' },
+  { key: 'charges',               label: 'Charges' },
   { key: 'sinistres',             label: 'Sinistres' },
   { key: 'rapports',              label: 'Rapports' },
 ];

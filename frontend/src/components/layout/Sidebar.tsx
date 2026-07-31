@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard, Users, UserSearch, FileCheck,
   AlertTriangle, BarChart3, Settings, LogOut, Users2, X, RefreshCw,
+  Receipt, Landmark, Wallet,
 } from 'lucide-react';
 
 const navItems = [
@@ -17,6 +18,9 @@ const navItems = [
   { label: 'Production CAT',         href: '/production-cat',        icon: FileCheck,       key: 'production-cat' },
   { label: 'Production Cover EDGE',  href: '/production-cover-edge', icon: FileCheck,       key: 'production-cover-edge' },
   { label: 'Renouvellements',        href: '/renouvellements',       icon: RefreshCw,       key: 'renouvellements' },
+  { label: 'Ristournes',             href: '/ristournes',            icon: Receipt,         key: 'ristournes' },
+  { label: 'Versements',             href: '/versements',            icon: Landmark,        key: 'versements' },
+  { label: 'Charges',                href: '/charges',               icon: Wallet,          key: 'charges' },
   { label: 'Sinistres',              href: '/sinistres',             icon: AlertTriangle,   key: 'sinistres' },
   { label: 'Rapports',               href: '/rapports',              icon: BarChart3,       key: 'rapports' },
 ];

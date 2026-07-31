@@ -16,6 +16,7 @@ export class DashboardService {
       totalClients, activeContracts, totalClaims, openClaims,
       monthPrimeTTC, monthPrimePaye, monthCommissions,
       totalPrimeTTC, totalReste,
+      monthRistournes, totalRistournes,
       expiringContracts,
       quotes, convertedQuotes,
       recentContracts, recentClaims, revenuByMonth,
@@ -46,6 +47,13 @@ export class DashboardService {
       this.prisma.contract.aggregate({ _sum: { primeTTC: true } }),
       /* Reste à encaisser total */
       this.prisma.contract.aggregate({ _sum: { primeTTC: true, primePaye: true, reduction: true } }),
+
+      /* Ristournes — bucketées sur LEUR date d'effet, pas celle de la production d'origine */
+      this.prisma.ristourne.aggregate({
+        where: { dateEffet: { gte: startOfMonth, lte: endOfMonth } },
+        _sum: { montant: true },
+      }),
+      this.prisma.ristourne.aggregate({ _sum: { montant: true } }),
 
       /* Échéances */
       this.prisma.contract.count({
@@ -79,16 +87,21 @@ export class DashboardService {
       - Number(totalReste._sum.primePaye ?? 0),
     );
 
+    const monthRistournesValue = Number(monthRistournes._sum.montant ?? 0);
+    const totalRistournesValue = Number(totalRistournes._sum.montant ?? 0);
+
     return {
       kpis: {
         totalClients,
         activeContracts,
         totalClaims,
         openClaims,
-        monthRevenue:      Number(monthPrimeTTC._sum.primeTTC ?? 0),
-        monthEncaissement: Number(monthPrimePaye._sum.primePaye ?? 0),
+        monthRevenue:      Number(monthPrimeTTC._sum.primeTTC ?? 0) - monthRistournesValue,
+        monthEncaissement: Number(monthPrimePaye._sum.primePaye ?? 0) - monthRistournesValue,
+        monthRistournes:   monthRistournesValue,
         monthCommissions:  Number(monthCommissions._sum.netAmount ?? 0),
-        totalCA:           Number(totalPrimeTTC._sum.primeTTC ?? 0),
+        totalCA:           Number(totalPrimeTTC._sum.primeTTC ?? 0) - totalRistournesValue,
+        totalRistournes:   totalRistournesValue,
         totalReste:        totalResteValue,
         expiringContracts,
         conversionRate: quotes > 0 ? Math.round((convertedQuotes / quotes) * 100) : 0,
@@ -114,7 +127,7 @@ export class DashboardService {
   }
 
   private async getMonthlyRevenue() {
-    const months: { month: string; revenue: number; encaissement: number; commissions: number }[] = [];
+    const months: { month: string; revenue: number; encaissement: number; ristournes: number; commissions: number }[] = [];
 
     for (let i = 11; i >= 0; i--) {
       const d = new Date();
@@ -124,7 +137,7 @@ export class DashboardService {
       const start = new Date(year, month - 1, 1);
       const end   = new Date(year, month,     0, 23, 59, 59);
 
-      const [rev, comm] = await Promise.all([
+      const [rev, comm, rist] = await Promise.all([
         this.prisma.contract.aggregate({
           where: { createdAt: { gte: start, lte: end } },
           _sum: { primeTTC: true, primePaye: true },
@@ -133,12 +146,19 @@ export class DashboardService {
           where: { period: `${year}-${String(month).padStart(2, '0')}` },
           _sum: { netAmount: true },
         }),
+        this.prisma.ristourne.aggregate({
+          where: { dateEffet: { gte: start, lte: end } },
+          _sum: { montant: true },
+        }),
       ]);
+
+      const ristournes = Number(rist._sum.montant ?? 0);
 
       months.push({
         month:         `${String(month).padStart(2, '0')}/${year}`,
-        revenue:       Number(rev._sum.primeTTC  ?? 0),
-        encaissement:  Number(rev._sum.primePaye ?? 0),
+        revenue:       Number(rev._sum.primeTTC  ?? 0) - ristournes,
+        encaissement:  Number(rev._sum.primePaye ?? 0) - ristournes,
+        ristournes,
         commissions:   Number(comm._sum.netAmount ?? 0),
       });
     }

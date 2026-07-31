@@ -234,6 +234,7 @@ model Contract {
   commissions       Commission[]
   renewalAlerts     RenewalAlert[]
   history           ContractHistory[]
+  ristournes        Ristourne[]
 
   @@index([clientId])
   @@index([status])
@@ -536,4 +537,62 @@ model Quittance {
   @@index([status])
   @@index([moisImport])
   @@map("quittances")
+}
+
+/// Remboursement du reliquat de prime quand un client résilie en cours de période
+/// (ex: véhicule vendu). Se déduit du CA du mois de SA PROPRE date d'effet,
+/// pas du mois de la production d'origine.
+model Ristourne {
+  id          String    @id @default(cuid())
+  contractId  String
+  contract    Contract  @relation(fields: [contractId], references: [id])
+  montant     Decimal
+  dateEffet   DateTime
+  motif       String?
+  notes       String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([contractId])
+  @@index([dateEffet])
+  @@map("ristournes")
+}
+
+/// Journal banque : chaque dépôt d'espèces/chèques ou virement client reçu.
+/// Sert au rapprochement annuel avec les primes encaissées.
+model Versement {
+  id        String   @id @default(cuid())
+  type      String   // VERSEMENT | VIREMENT
+  montant   Decimal
+  date      DateTime
+  reference String?
+  banque    String?
+  notes     String?
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@map("versements")
+}
+
+/// Charges d'exploitation de l'agence, par mois.
+/// isRecurrent : la ligne se reporte automatiquement sur le mois suivant.
+model Charge {
+  id          String   @id @default(cuid())
+  mois        String   // "2026-07"
+  categorie   String   // SALAIRE | LOYER | FACTURE | ACHAT | AUTRE
+  libelle     String
+  montant     Decimal
+  isRecurrent Boolean  @default(false)
+  notes       String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mois])
+  @@index([categorie])
+  @@map("charges")
 }

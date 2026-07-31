@@ -43,7 +43,9 @@ export default function DashboardPage() {
       value: formatCurrency(stats.monthRevenue ?? 0),
       icon: Banknote,
       color: 'text-purple-600 bg-purple-50',
-      sub: `Encaissé : ${formatCurrency(stats.monthEncaissement ?? 0)}`,
+      sub: (stats.monthRistournes ?? 0) > 0
+        ? `Encaissé : ${formatCurrency(stats.monthEncaissement ?? 0)} · Ristournes : −${formatCurrency(stats.monthRistournes)}`
+        : `Encaissé : ${formatCurrency(stats.monthEncaissement ?? 0)}`,
     },
     {
       label: 'CA total',
