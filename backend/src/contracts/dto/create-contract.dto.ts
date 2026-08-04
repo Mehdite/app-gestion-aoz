@@ -17,6 +17,7 @@ export class CreateContractDto {
   @ApiPropertyOptional() @IsOptional() @IsNumber() reduction?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() primePaye?: number;
   @ApiProperty() @IsString() @IsIn(FREQUENCIES) frequency: string;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() souscriptionDate?: string;
   @ApiProperty() @IsDateString() effectiveDate: string;
   @ApiProperty() @IsDateString() expiryDate: string;
   @ApiPropertyOptional() @IsOptional() details?: any;

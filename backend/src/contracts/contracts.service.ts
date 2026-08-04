@@ -24,6 +24,9 @@ export class ContractsService {
           taxes,
           contractNumber,
           agentId,
+          /* Sert au classement de la production — jamais nul, sinon la ligne
+             remonterait en tête de liste (les NULL passent avant en tri desc) */
+          souscriptionDate: rest.souscriptionDate ? new Date(rest.souscriptionDate) : new Date(),
           effectiveDate: new Date(rest.effectiveDate),
           expiryDate:    new Date(rest.expiryDate),
         },
@@ -90,7 +93,13 @@ export class ContractsService {
 
     const [data, total] = await Promise.all([
       this.prisma.contract.findMany({
-        where, skip, take, orderBy: { contractNumber: 'asc' },
+        where, skip, take,
+        /* Production classée de la plus récente à la plus ancienne.
+           `nulls: 'last'` évite qu'une ligne sans date remonte en tête. */
+        orderBy: [
+          { souscriptionDate: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
         include: {
           client: { select: { id: true, firstName: true, lastName: true, companyName: true, type: true, phone: true } },
           company: { select: { id: true, name: true, logo: true } },

@@ -19,6 +19,7 @@ const schema = z.object({
   reduction:      z.coerce.number().min(0).default(0),
   primePaye:      z.coerce.number().min(0).default(0),
   frequency:      z.string().min(1),
+  souscriptionDate: z.string().min(1, 'Date de souscription requise'),
   effectiveDate:  z.string().min(1, "Date d'effet requise"),
   expiryDate:     z.string().min(1),
   notes:          z.string().optional(),
@@ -83,6 +84,10 @@ function fmt(n: number) {
   return n.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function aujourdhui() {
+  return new Date().toISOString().split('T')[0];
+}
+
 interface Props {
   companyCode: string;
   returnPath: string;
@@ -125,7 +130,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { frequency: 'ANNUAL', reduction: 0, primePaye: 0 },
+    defaultValues: { frequency: 'ANNUAL', reduction: 0, primePaye: 0, souscriptionDate: aujourdhui() },
   });
 
   const primeTTC      = Number(watch('primeTTC'))  || 0;
@@ -448,6 +453,14 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
           {/* Dates */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Période de couverture</h2>
+            <div>
+              <label className="label">Date de souscription *</label>
+              <input type="date" className="input w-full max-w-xs" {...register('souscriptionDate')} />
+              <p className="text-xs text-gray-400 mt-1">
+                Classe la production dans la liste — modifiez-la si vous saisissez en différé
+              </p>
+              {errors.souscriptionDate && <p className="text-xs text-red-500 mt-1">{errors.souscriptionDate.message}</p>}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label">Date d&apos;effet *</label>

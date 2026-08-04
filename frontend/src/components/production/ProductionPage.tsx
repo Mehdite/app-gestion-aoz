@@ -318,6 +318,7 @@ export function ProductionPage({ companyCode, title }: Props) {
                   <th className="table-header-cell w-8">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 rounded" />
                   </th>
+                  <th className="table-header-cell">Souscription</th>
                   <th className="table-header-cell">N° Police</th>
                   <th className="table-header-cell">Client</th>
                   <th className="table-header-cell">Type</th>
@@ -333,12 +334,12 @@ export function ProductionPage({ companyCode, title }: Props) {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {isLoading && [...Array(5)].map((_, i) => (
-                  <tr key={i}>{[...Array(12)].map((_, j) => (
+                  <tr key={i}>{[...Array(13)].map((_, j) => (
                     <td key={j} className="table-cell"><div className="animate-pulse bg-gray-100 rounded h-4 w-20" /></td>
                   ))}</tr>
                 ))}
                 {!isLoading && contracts.length === 0 && (
-                  <tr><td colSpan={12} className="text-center py-10 text-gray-400 text-sm">
+                  <tr><td colSpan={13} className="text-center py-10 text-gray-400 text-sm">
                     Aucune production enregistrée
                   </td></tr>
                 )}
@@ -353,6 +354,9 @@ export function ProductionPage({ companyCode, title }: Props) {
                       <tr key={c.id} className={cn('hover:bg-gray-50 transition-colors', isEditing && 'bg-brand-50', selected.includes(c.id) && 'bg-red-50')}>
                         <td className="table-cell">
                           <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleOne(c.id)} className="w-4 h-4 rounded" />
+                        </td>
+                        <td className="table-cell text-xs font-medium text-gray-700">
+                          {formatDate(c.souscriptionDate ?? c.createdAt)}
                         </td>
                         <td className="table-cell font-mono text-xs font-medium text-gray-900">{c.contractNumber}</td>
                         <td className="table-cell">
@@ -421,7 +425,7 @@ export function ProductionPage({ companyCode, title }: Props) {
                       {/* Panneau d'édition inline */}
                       {isEditing && editing && (
                         <tr key={`edit-${c.id}`}>
-                          <td colSpan={12} className="bg-brand-50 border-b border-brand-100 px-4 py-4">
+                          <td colSpan={13} className="bg-brand-50 border-b border-brand-100 px-4 py-4">
                             <div className="flex flex-wrap items-end gap-4">
                               <div>
                                 <p className="text-xs text-gray-500 mb-1">N° Police</p>

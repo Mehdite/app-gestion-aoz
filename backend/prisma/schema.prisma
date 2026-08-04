@@ -212,6 +212,7 @@ model Contract {
   primePaye         Decimal   @default(0)
   frequency         String    @default("ANNUAL")  // MONTHLY | QUARTERLY | SEMI_ANNUAL | ANNUAL
 
+  souscriptionDate  DateTime?   // date de souscription — sert au classement de la production
   effectiveDate     DateTime
   expiryDate        DateTime
   renewedAt         DateTime?
@@ -240,6 +241,7 @@ model Contract {
   @@index([status])
   @@index([expiryDate])
   @@index([contractNumber])
+  @@index([souscriptionDate])
   @@map("contracts")
 }
 
