@@ -253,6 +253,11 @@ export class ContractsService {
         documents: { orderBy: { createdAt: 'desc' } },
         history: { orderBy: { createdAt: 'desc' }, take: 20 },
         renewalAlerts: true,
+        /* Pour la page de détail : d'où vient ce contrat, ce qu'il est devenu,
+           et s'il a donné lieu à un remboursement */
+        ristournes:  { orderBy: { dateEffet: 'desc' } },
+        renewedFrom: { select: { id: true, contractNumber: true, effectiveDate: true, expiryDate: true, primeTTC: true } },
+        renewedTo:   { select: { id: true, contractNumber: true, effectiveDate: true, expiryDate: true, primeTTC: true } },
       },
     });
     if (!contract) throw new NotFoundException('Contrat non trouvé');

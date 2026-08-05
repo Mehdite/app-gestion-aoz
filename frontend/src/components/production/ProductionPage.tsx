@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiHelper } from '@/lib/api';
@@ -358,8 +358,10 @@ export function ProductionPage({ companyCode, title }: Props) {
                   const reste = Math.max(0, ttc - reduc - paye);
                   const isEditing = editing?.id === c.id;
                   return (
-                    <>
-                      <tr key={c.id} className={cn('hover:bg-gray-50 transition-colors', isEditing && 'bg-brand-50', selected.includes(c.id) && 'bg-red-50')}>
+                    /* La clé va sur le fragment (l'élément rendu par map),
+                       pas sur le <tr> qu'il contient */
+                    <Fragment key={c.id}>
+                      <tr className={cn('hover:bg-gray-50 transition-colors', isEditing && 'bg-brand-50', selected.includes(c.id) && 'bg-red-50')}>
                         <td className="table-cell">
                           <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleOne(c.id)} className="w-4 h-4 rounded" />
                         </td>
@@ -499,7 +501,7 @@ export function ProductionPage({ companyCode, title }: Props) {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
