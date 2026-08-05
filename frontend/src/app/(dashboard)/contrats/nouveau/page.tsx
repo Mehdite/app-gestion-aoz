@@ -1,7 +1,7 @@
 'use client';
 
-import { SaisirProductionForm } from '@/components/production/SaisirProductionForm';
+import { SaisirProductionAxa } from '@/components/production/SaisirProductionAxa';
 
 export default function NouveauAXAPage() {
-  return <SaisirProductionForm companyCode="AXA" returnPath="/contrats" />;
+  return <SaisirProductionAxa />;
 }

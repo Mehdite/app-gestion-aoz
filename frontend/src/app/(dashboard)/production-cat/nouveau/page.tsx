@@ -1,7 +1,7 @@
 'use client';
 
-import { SaisirProductionForm } from '@/components/production/SaisirProductionForm';
+import { SaisirProductionCat } from '@/components/production/SaisirProductionCat';
 
 export default function NouveauCATPage() {
-  return <SaisirProductionForm companyCode="CAT" returnPath="/production-cat" />;
+  return <SaisirProductionCat />;
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { SaisirProductionForm } from '@/components/production/SaisirProductionForm';
+import { SaisirProductionCoverEdge } from '@/components/production/SaisirProductionCoverEdge';
 
 export default function NouveauCoverEdgePage() {
-  return <SaisirProductionForm companyCode="COVER_EDGE" returnPath="/production-cover-edge" />;
+  return <SaisirProductionCoverEdge />;
 }

@@ -1,5 +1,12 @@
 'use client';
 
+/* ═══════════════════════════════════════════════════════════════
+   FORMULAIRE DE SAISIE — PRODUCTION COVER EDGE UNIQUEMENT
+   Volontairement indépendant d'AXA et CAT. Pas de
+   sous-catégorie ici : le champ n'existe ni dans le formulaire,
+   ni dans le schéma, ni dans ce qui est envoyé au serveur.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -10,54 +17,16 @@ import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Info, UserPlus, Users, CheckCircle2 } from 'lucide-react';
-import { cn, SOUS_CATEGORIES_BY_TYPE } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
-const schema = z.object({
-  contractNumber: z.string().optional(),
-  type:           z.string().min(1, 'Type requis'),
-  sousCategorie:  z.string().optional(),
-  primeTTC:       z.coerce.number().positive('Prime TTC requise'),
-  reduction:      z.coerce.number().min(0).default(0),
-  primePaye:      z.coerce.number().min(0).default(0),
-  frequency:      z.string().min(1),
-  souscriptionDate: z.string().min(1, 'Date de souscription requise'),
-  effectiveDate:  z.string().min(1, "Date d'effet requise"),
-  expiryDate:     z.string().min(1),
-  notes:          z.string().optional(),
-}).refine(
-  /* Automobile et Moto exigent une précision ; les autres types n'en ont pas */
-  (d) => !SOUS_CATEGORIES_BY_TYPE[d.type] || !!d.sousCategorie,
-  { message: 'Précision requise', path: ['sousCategorie'] },
-);
-type FormData = z.infer<typeof schema>;
+const COMPANY_CODE = 'COVER_EDGE';
+const RETURN_PATH  = '/production-cover-edge';
 
-const TYPES_BY_COMPANY: Record<string, { value: string; label: string }[]> = {
-  AXA: [
-    { value: 'AUTO',            label: 'Automobile' },
-    { value: 'MOTO',            label: 'Moto' },
-    { value: 'HOME',            label: 'Habitation' },
-    { value: 'HEALTH',          label: 'Santé' },
-    { value: 'PROFESSIONAL',    label: 'Multirisque Pro' },
-    { value: 'DECENNIAL',       label: 'Décennale' },
-    { value: 'TRANSPORT',       label: 'Transport' },
-    { value: 'LIFE',            label: 'Vie' },
-    { value: 'WORK_ACCIDENT',   label: 'Accident de travail' },
-    { value: 'RC_EXPLOITATION', label: 'RC Exploitation' },
-    { value: 'RC_PRO',          label: 'RC Pro' },
-    { value: 'OTHER',           label: 'Autre' },
-  ],
-  CAT: [
-    { value: 'PETIT_TAXI', label: 'Petit Taxi' },
-    { value: 'GRAND_TAXI', label: 'Grand Taxi' },
-    { value: 'TRIPORTEUR', label: 'Triporteur' },
-    { value: 'FRONTIERE',  label: 'Frontière' },
-  ],
-  COVER_EDGE: [
-    { value: 'VOYAGE',              label: 'Assurance de voyage' },
-    { value: 'ASSISTANCE',          label: 'Assistance' },
-    { value: 'ASSISTANCE_MEDICALE', label: 'Assistance Médicale' },
-  ],
-};
+const TYPES = [
+  { value: 'VOYAGE',              label: 'Assurance de voyage' },
+  { value: 'ASSISTANCE',          label: 'Assistance' },
+  { value: 'ASSISTANCE_MEDICALE', label: 'Assistance Médicale' },
+];
 
 const FREQUENCIES = [
   { value: 'ANNUAL',      label: 'Annuelle' },
@@ -67,14 +36,24 @@ const FREQUENCIES = [
 ];
 
 const MONTHS_BY_FREQUENCY: Record<string, number> = {
-  MONTHLY:     1,
-  QUARTERLY:   3,
-  SEMI_ANNUAL: 6,
-  ANNUAL:      12,
+  MONTHLY: 1, QUARTERLY: 3, SEMI_ANNUAL: 6, ANNUAL: 12,
 };
 
-/** Convention assurance : échéance = date d'effet + période - 1 jour
- *  (ex: effet 30/07/2026, trimestrielle → 29/10/2026, pas 30/10/2026) */
+const schema = z.object({
+  contractNumber:   z.string().optional(),
+  type:             z.string().min(1, 'Type requis'),
+  primeTTC:         z.coerce.number().positive('Prime TTC requise'),
+  reduction:        z.coerce.number().min(0).default(0),
+  primePaye:        z.coerce.number().min(0).default(0),
+  frequency:        z.string().min(1),
+  souscriptionDate: z.string().min(1, 'Date de souscription requise'),
+  effectiveDate:    z.string().min(1, "Date d'effet requise"),
+  expiryDate:       z.string().min(1),
+  notes:            z.string().optional(),
+});
+type FormData = z.infer<typeof schema>;
+
+/** Convention assurance : échéance = date d'effet + période - 1 jour */
 function computeExpiryDate(dateStr: string, frequency: string) {
   if (!dateStr) return '';
   const months = MONTHS_BY_FREQUENCY[frequency] ?? 12;
@@ -85,48 +64,31 @@ function computeExpiryDate(dateStr: string, frequency: string) {
   return date.toISOString().split('T')[0];
 }
 
-function fmt(n: number) {
-  return n.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const fmt = (n: number) => n.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const aujourdhui = () => new Date().toISOString().split('T')[0];
 
-function aujourdhui() {
-  return new Date().toISOString().split('T')[0];
-}
-
-interface Props {
-  companyCode: string;
-  returnPath: string;
-}
-
-export function SaisirProductionForm({ companyCode, returnPath }: Props) {
+export function SaisirProductionCoverEdge() {
   const router = useRouter();
 
-  const { data: clientsData } = useQuery({
-    queryKey: ['clients-all'],
-    queryFn: () => apiHelper.get<any>('/clients', { limit: 500 }),
-  });
-  const { data: companiesData } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => apiHelper.get<any>('/companies'),
-  });
+  const { data: clientsData }   = useQuery({ queryKey: ['clients-all'], queryFn: () => apiHelper.get<any>('/clients', { limit: 500 }) });
+  const { data: companiesData } = useQuery({ queryKey: ['companies'],   queryFn: () => apiHelper.get<any>('/companies') });
 
-  const clients   = (clientsData  as any)?.data ?? [];
+  const clients   = (clientsData   as any)?.data ?? [];
   const companies = (companiesData as any)?.data ?? [];
 
-  const selectedCompany   = companies.find((c: any) => c.code === companyCode) ?? null;
-  const selectedCompanyId = selectedCompany?.id ?? '';
-  const companyLabel      = selectedCompany?.name ?? companyCode;
-  const types             = TYPES_BY_COMPANY[companyCode] ?? TYPES_BY_COMPANY.AXA;
+  const company     = companies.find((c: any) => c.code === COMPANY_CODE) ?? null;
+  const companyId   = company?.id ?? '';
+  const companyName = company?.name ?? COMPANY_CODE;
 
-  const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
-  const [clientSearch, setClientSearch]     = useState('');
-  const [showClientDrop, setShowClientDrop] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState('');
+  const [clientMode, setClientMode]               = useState<'existing' | 'new'>('existing');
+  const [clientSearch, setClientSearch]           = useState('');
+  const [showClientDrop, setShowClientDrop]       = useState(false);
+  const [selectedClientId, setSelectedClientId]   = useState('');
   const [selectedClientObj, setSelectedClientObj] = useState<any>(null);
 
   const [nc, setNc] = useState({
-    type:        'INDIVIDUAL' as 'INDIVIDUAL' | 'COMPANY',
-    firstName:   '', lastName: '', companyName: '',
+    type: 'INDIVIDUAL' as 'INDIVIDUAL' | 'COMPANY',
+    firstName: '', lastName: '', companyName: '',
     phone: '', cin: '', ice: '', email: '', city: '',
   });
   const [ncErrors, setNcErrors] = useState<Record<string, string>>({});
@@ -143,8 +105,6 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   const primePaye     = Number(watch('primePaye')) || 0;
   const effectiveDate = watch('effectiveDate');
   const frequency     = watch('frequency');
-  const typeChoisi    = watch('type');
-  const sousCategories = SOUS_CATEGORIES_BY_TYPE[typeChoisi] ?? null;
   const primeNette    = Math.max(0, primeTTC - reduction);
   const resteAPayer   = Math.max(0, primeNette - primePaye);
 
@@ -162,18 +122,13 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
     if (effectiveDate) setValue('expiryDate', computeExpiryDate(effectiveDate, frequency));
   }, [effectiveDate, frequency, setValue]);
 
-  /* Changer de type invalide la précision choisie (ex: "Motocycle" sur une Automobile) */
-  useEffect(() => {
-    setValue('sousCategorie', '');
-  }, [typeChoisi, setValue]);
-
   function validateNewClient() {
     const errs: Record<string, string> = {};
     if (nc.type === 'INDIVIDUAL') {
       if (!nc.firstName.trim()) errs.firstName = 'Prénom requis';
       if (!nc.lastName.trim())  errs.lastName  = 'Nom requis';
-    } else {
-      if (!nc.companyName.trim()) errs.companyName = 'Raison sociale requise';
+    } else if (!nc.companyName.trim()) {
+      errs.companyName = 'Raison sociale requise';
     }
     if (!nc.phone.trim() || nc.phone.trim().length < 10) errs.phone = 'Téléphone requis (10 chiffres min)';
     setNcErrors(errs);
@@ -183,34 +138,31 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const currentNc = ncRef.current;
-      let resolvedClientId = selectedClientId;
+      let clientId = selectedClientId;
 
       if (clientMode === 'new') {
-        const clientPayload: any = { type: currentNc.type, phone: currentNc.phone.trim() };
+        const payload: any = { type: currentNc.type, phone: currentNc.phone.trim() };
         if (currentNc.type === 'INDIVIDUAL') {
-          clientPayload.firstName = currentNc.firstName.trim();
-          clientPayload.lastName  = currentNc.lastName.trim();
-          if (currentNc.cin.trim()) clientPayload.cin = currentNc.cin.trim();
+          payload.firstName = currentNc.firstName.trim();
+          payload.lastName  = currentNc.lastName.trim();
+          if (currentNc.cin.trim()) payload.cin = currentNc.cin.trim();
         } else {
-          clientPayload.companyName = currentNc.companyName.trim();
-          if (currentNc.ice.trim()) clientPayload.ice = currentNc.ice.trim();
+          payload.companyName = currentNc.companyName.trim();
+          if (currentNc.ice.trim()) payload.ice = currentNc.ice.trim();
         }
-        if (currentNc.email.trim()) clientPayload.email = currentNc.email.trim();
-        if (currentNc.city.trim())  clientPayload.city  = currentNc.city.trim();
+        if (currentNc.email.trim()) payload.email = currentNc.email.trim();
+        if (currentNc.city.trim())  payload.city  = currentNc.city.trim();
 
-        const res = await apiHelper.post<any>('/clients', clientPayload);
-        resolvedClientId = (res as any).data?.id ?? (res as any).id;
+        const res = await apiHelper.post<any>('/clients', payload);
+        clientId = (res as any).data?.id ?? (res as any).id;
       }
 
-      if (!resolvedClientId) throw new Error('Client introuvable — veuillez sélectionner ou créer un client');
+      if (!clientId) throw new Error('Client introuvable — veuillez sélectionner ou créer un client');
 
       return apiHelper.post('/contracts', {
         ...data,
-        /* Le champ vaut '' pour les types sans précision : on l'omet plutôt
-           que d'envoyer une chaîne vide, que la validation refuserait */
-        sousCategorie: data.sousCategorie || undefined,
-        clientId:  resolvedClientId,
-        companyId: selectedCompanyId,
+        clientId,
+        companyId,
         primeHT:   data.primeTTC,
         taxes:     0,
         autoRenew: false,
@@ -218,7 +170,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
     },
     onSuccess: () => {
       toast.success('Production enregistrée' + (clientMode === 'new' ? ' — nouveau client créé' : ''));
-      router.push(returnPath);
+      router.push(RETURN_PATH);
     },
     onError: (e: any) => {
       const msg = e?.response?.data?.message;
@@ -227,7 +179,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   });
 
   const onSubmit = (data: FormData) => {
-    if (!selectedCompanyId) { toast.error(`Compagnie ${companyCode} introuvable — contactez l'administrateur`); return; }
+    if (!companyId) { toast.error("Compagnie Cover EDGE introuvable — contactez l'administrateur"); return; }
     if (clientMode === 'existing' && !selectedClientId) { toast.error('Veuillez sélectionner un client'); return; }
     if (clientMode === 'new' && !validateNewClient()) return;
     mutation.mutate(data);
@@ -235,76 +187,48 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
 
   return (
     <div>
-      <Header title={`Saisir une production — ${companyLabel}`} />
+      <Header title={`Saisir une production — ${companyName}`} />
       <div className="p-6">
-        <button onClick={() => router.push(returnPath)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+        <button onClick={() => router.push(RETURN_PATH)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
 
         <div className="flex items-start gap-3 mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
           <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <p>
-            Production <strong>{companyLabel}</strong> — saisie journalière. Le client est créé automatiquement s&apos;il est nouveau.
-          </p>
+          <p>Production <strong>{companyName}</strong> — saisie journalière. Le client est créé automatiquement s&apos;il est nouveau.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-5">
 
-          {/* Identification */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Identification</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label">N° police</label>
-                <input type="text" className="input" placeholder={`Ex: ${companyCode}-2024-000123`} {...register('contractNumber')} />
+                <input type="text" className="input" placeholder="Ex: CE-2024-000123" {...register('contractNumber')} />
                 <p className="text-xs text-gray-400 mt-1">Optionnel — auto-généré si vide</p>
               </div>
               <div>
                 <label className="label">Type d&apos;assurance *</label>
                 <select className="input" {...register('type')}>
                   <option value="">Sélectionner...</option>
-                  {types.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type.message}</p>}
               </div>
             </div>
 
-            {/* Précision — uniquement pour Automobile et Moto */}
-            {sousCategories && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">
-                    Précision {types.find((t) => t.value === typeChoisi)?.label} *
-                  </label>
-                  <select className="input" {...register('sousCategorie')}>
-                    <option value="">Sélectionner...</option>
-                    {sousCategories.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                  {errors.sousCategorie && (
-                    <p className="text-xs text-red-500 mt-1">{errors.sousCategorie.message}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Client */}
             <div>
               <label className="label mb-2">Client *</label>
               <div className="flex gap-2 mb-3">
                 {(['existing', 'new'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setClientMode(mode)}
+                  <button key={mode} type="button" onClick={() => setClientMode(mode)}
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all',
                       mode === 'existing'
                         ? clientMode === 'existing' ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'
                         : clientMode === 'new'      ? 'bg-green-600 text-white border-green-600'  : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
-                    )}
-                  >
+                    )}>
                     {mode === 'existing' ? <><Users className="w-4 h-4" /> Client existant</> : <><UserPlus className="w-4 h-4" /> Nouveau client</>}
                   </button>
                 ))}
@@ -313,14 +237,11 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
               {clientMode === 'existing' && (
                 <div className="space-y-3">
                   <div className="relative">
-                    <input
-                      type="text" className="input"
-                      placeholder="Rechercher par nom, téléphone ou CIN..."
-                      value={clientSearch}
+                    <input type="text" className="input" placeholder="Rechercher par nom, téléphone ou CIN..."
+                      value={clientSearch} autoComplete="off"
                       onChange={(e) => { setClientSearch(e.target.value); setShowClientDrop(true); setSelectedClientId(''); setSelectedClientObj(null); }}
                       onFocus={() => setShowClientDrop(true)}
                       onBlur={() => setTimeout(() => setShowClientDrop(false), 150)}
-                      autoComplete="off"
                     />
                     {showClientDrop && filteredClients.length > 0 && (
                       <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-52 overflow-y-auto">
@@ -332,8 +253,7 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
                               setSelectedClientObj(c);
                               setClientSearch(c.type === 'INDIVIDUAL' ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() : c.companyName ?? '');
                               setShowClientDrop(false);
-                            }}
-                          >
+                            }}>
                             <span className="font-medium text-sm text-gray-900">
                               {c.type === 'INDIVIDUAL' ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() : c.companyName}
                             </span>
@@ -434,7 +354,6 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
             </div>
           </div>
 
-          {/* Primes */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Primes (MAD)</h2>
             <div className="grid grid-cols-2 gap-4">
@@ -485,15 +404,12 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
             </div>
           </div>
 
-          {/* Dates */}
           <div className="card p-6 space-y-4">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Période de couverture</h2>
             <div>
               <label className="label">Date de souscription *</label>
               <input type="date" className="input w-full max-w-xs" {...register('souscriptionDate')} />
-              <p className="text-xs text-gray-400 mt-1">
-                Classe la production dans la liste — modifiez-la si vous saisissez en différé
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Classe la production dans la liste — modifiez-la si vous saisissez en différé</p>
               {errors.souscriptionDate && <p className="text-xs text-red-500 mt-1">{errors.souscriptionDate.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -512,15 +428,14 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
             </div>
           </div>
 
-          {/* Notes */}
           <div className="card p-6">
             <label className="label">Notes / Observations</label>
             <textarea rows={3} className="input" placeholder="Remarques éventuelles..." {...register('notes')} />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => router.push(returnPath)} className="btn-secondary">Annuler</button>
-            <button type="submit" disabled={mutation.isPending || !selectedCompanyId} className="btn-primary">
+            <button type="button" onClick={() => router.push(RETURN_PATH)} className="btn-secondary">Annuler</button>
+            <button type="submit" disabled={mutation.isPending || !companyId} className="btn-primary">
               {mutation.isPending ? (clientMode === 'new' ? 'Création client...' : 'Enregistrement...') : 'Enregistrer la production'}
             </button>
           </div>
