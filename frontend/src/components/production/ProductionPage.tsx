@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
-import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency, insuranceTypeLabels } from '@/lib/utils';
+import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency, insuranceTypeLabels, sousCategorieLabels } from '@/lib/utils';
 import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save, Trash2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CreditSection } from './CreditSection';
@@ -373,6 +373,9 @@ export function ProductionPage({ companyCode, title }: Props) {
                         </td>
                         <td className="table-cell">
                           <span className="badge bg-blue-50 text-blue-700">{insuranceTypeLabels[c.type]}</span>
+                          {c.sousCategorie && (
+                            <p className="text-xs text-gray-400 mt-0.5">{sousCategorieLabels[c.sousCategorie] ?? c.sousCategorie}</p>
+                          )}
                         </td>
                         <td className="table-cell font-semibold text-sm">{formatCurrency(ttc)}</td>
                         <td className="table-cell text-sm">

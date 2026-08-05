@@ -189,6 +189,8 @@ model Contract {
   contractNumber    String
   status            String    @default("ACTIVE")  // ACTIVE | EXPIRED | SUSPENDED | CANCELLED | PENDING_RENEWAL
   type              String
+  /// Précision du type : AUTO -> TOURISME|C1|C2|DIVERS, MOTO -> MOTOCYCLE|AUTRESMOTO
+  sousCategorie     String?
 
   clientId          String
   client            Client    @relation(fields: [clientId], references: [id])

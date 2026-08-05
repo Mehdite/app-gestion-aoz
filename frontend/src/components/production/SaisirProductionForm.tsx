@@ -10,11 +10,12 @@ import { apiHelper } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Info, UserPlus, Users, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, SOUS_CATEGORIES_BY_TYPE } from '@/lib/utils';
 
 const schema = z.object({
   contractNumber: z.string().optional(),
   type:           z.string().min(1, 'Type requis'),
+  sousCategorie:  z.string().optional(),
   primeTTC:       z.coerce.number().positive('Prime TTC requise'),
   reduction:      z.coerce.number().min(0).default(0),
   primePaye:      z.coerce.number().min(0).default(0),
@@ -23,7 +24,11 @@ const schema = z.object({
   effectiveDate:  z.string().min(1, "Date d'effet requise"),
   expiryDate:     z.string().min(1),
   notes:          z.string().optional(),
-});
+}).refine(
+  /* Automobile et Moto exigent une précision ; les autres types n'en ont pas */
+  (d) => !SOUS_CATEGORIES_BY_TYPE[d.type] || !!d.sousCategorie,
+  { message: 'Précision requise', path: ['sousCategorie'] },
+);
 type FormData = z.infer<typeof schema>;
 
 const TYPES_BY_COMPANY: Record<string, { value: string; label: string }[]> = {
@@ -138,6 +143,8 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   const primePaye     = Number(watch('primePaye')) || 0;
   const effectiveDate = watch('effectiveDate');
   const frequency     = watch('frequency');
+  const typeChoisi    = watch('type');
+  const sousCategories = SOUS_CATEGORIES_BY_TYPE[typeChoisi] ?? null;
   const primeNette    = Math.max(0, primeTTC - reduction);
   const resteAPayer   = Math.max(0, primeNette - primePaye);
 
@@ -154,6 +161,11 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
   useEffect(() => {
     if (effectiveDate) setValue('expiryDate', computeExpiryDate(effectiveDate, frequency));
   }, [effectiveDate, frequency, setValue]);
+
+  /* Changer de type invalide la précision choisie (ex: "Motocycle" sur une Automobile) */
+  useEffect(() => {
+    setValue('sousCategorie', '');
+  }, [typeChoisi, setValue]);
 
   function validateNewClient() {
     const errs: Record<string, string> = {};
@@ -253,6 +265,26 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
                 {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type.message}</p>}
               </div>
             </div>
+
+            {/* Précision — uniquement pour Automobile et Moto */}
+            {sousCategories && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">
+                    Précision {types.find((t) => t.value === typeChoisi)?.label} *
+                  </label>
+                  <select className="input" {...register('sousCategorie')}>
+                    <option value="">Sélectionner...</option>
+                    {sousCategories.map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                  {errors.sousCategorie && (
+                    <p className="text-xs text-red-500 mt-1">{errors.sousCategorie.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Client */}
             <div>

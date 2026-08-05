@@ -3,9 +3,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 const INSURANCE_TYPES = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','WORK_ACCIDENT','RC_EXPLOITATION','RC_PRO','OTHER','PETIT_TAXI','GRAND_TAXI','TRIPORTEUR','FRONTIERE','VOYAGE','ASSISTANCE','ASSISTANCE_MEDICALE'];
 const FREQUENCIES     = ['MONTHLY','QUARTERLY','SEMI_ANNUAL','ANNUAL'];
+/** Précisions du type : AUTO -> TOURISME|C1|C2|DIVERS, MOTO -> MOTOCYCLE|AUTRESMOTO */
+const SOUS_CATEGORIES = ['TOURISME','C1','C2','DIVERS','MOTOCYCLE','AUTRESMOTO'];
 
 export class CreateContractDto {
   @ApiProperty() @IsString() @IsIn(INSURANCE_TYPES) type: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @IsIn(SOUS_CATEGORIES) sousCategorie?: string;
   @ApiProperty() @IsString() clientId: string;
   @ApiProperty() @IsString() companyId: string;
   @ApiPropertyOptional() @IsOptional() @IsString() contractNumber?: string;

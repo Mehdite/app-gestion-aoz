@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiHelper } from '@/lib/api';
-import { cn, clientName, formatCurrency, formatDate, insuranceTypeLabels } from '@/lib/utils';
+import { cn, clientName, formatCurrency, formatDate, insuranceTypeLabels, sousCategorieLabels } from '@/lib/utils';
 import { Wallet, Phone, Eye, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 
 interface Props {
@@ -121,7 +121,12 @@ export function CreditSection({ companyCode, refreshKey }: Props) {
                           ) : <span className="text-gray-300 text-sm">—</span>}
                         </td>
                         <td className="table-cell font-mono text-xs font-medium text-gray-900">{c.contractNumber}</td>
-                        <td className="table-cell text-sm">{insuranceTypeLabels[c.type] ?? c.type}</td>
+                        <td className="table-cell text-sm">
+                          {insuranceTypeLabels[c.type] ?? c.type}
+                          {c.sousCategorie && (
+                            <span className="text-gray-400"> · {sousCategorieLabels[c.sousCategorie] ?? c.sousCategorie}</span>
+                          )}
+                        </td>
                         <td className="table-cell text-sm tabular-nums">{formatCurrency(nette)}</td>
                         <td className="table-cell text-sm tabular-nums">
                           {paye > 0

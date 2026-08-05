@@ -126,7 +126,7 @@ export class ContractsService {
     const contracts = await this.prisma.contract.findMany({
       where,
       select: {
-        id: true, contractNumber: true, type: true, status: true,
+        id: true, contractNumber: true, type: true, sousCategorie: true, status: true,
         primeTTC: true, reduction: true, primePaye: true,
         souscriptionDate: true, effectiveDate: true, expiryDate: true, createdAt: true,
         client:  { select: { id: true, firstName: true, lastName: true, companyName: true, type: true, phone: true } },
@@ -163,7 +163,12 @@ export class ContractsService {
   }): Promise<Buffer> {
     const where = this.buildWhere(params);
     const contracts = await this.prisma.contract.findMany({
-      where, orderBy: { contractNumber: 'asc' },
+      where,
+      /* Même ordre qu'à l'écran, sinon le fichier téléchargé surprend */
+      orderBy: [
+        { souscriptionDate: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+      ],
       include: {
         client:  { select: { firstName: true, lastName: true, companyName: true, type: true, phone: true } },
         company: { select: { name: true, code: true } },
@@ -183,6 +188,7 @@ export class ContractsService {
       { header: 'Téléphone',       key: 'phone',          width: 14 },
       { header: 'Compagnie',       key: 'company',        width: 14 },
       { header: 'Type',            key: 'type',           width: 16 },
+      { header: 'Précision',       key: 'sousCategorie',  width: 14 },
       { header: 'Prime TTC (MAD)', key: 'primeTTC',       width: 16 },
       { header: 'Réduction (MAD)', key: 'reduction',      width: 16 },
       { header: 'Encaissé (MAD)',  key: 'primePaye',      width: 16 },
@@ -215,6 +221,7 @@ export class ContractsService {
         phone:         c.client.phone,
         company:       c.company.code,
         type:          c.type,
+        sousCategorie: c.sousCategorie ?? '',
         primeTTC:      ttc,
         reduction,
         primePaye,

@@ -102,6 +102,24 @@ export const insuranceTypeLabels: Record<string, string> = {
   ASSISTANCE_MEDICALE: 'Assistance Médicale',
 };
 
+/** Sous-catégories proposées selon le type d'assurance (AXA uniquement) */
+export const SOUS_CATEGORIES_BY_TYPE: Record<string, { value: string; label: string }[]> = {
+  AUTO: [
+    { value: 'TOURISME', label: 'Tourisme' },
+    { value: 'C1',       label: 'C1' },
+    { value: 'C2',       label: 'C2' },
+    { value: 'DIVERS',   label: 'Divers' },
+  ],
+  MOTO: [
+    { value: 'MOTOCYCLE',  label: 'Motocycle' },
+    { value: 'AUTRESMOTO', label: 'Autresmoto' },
+  ],
+};
+
+export const sousCategorieLabels: Record<string, string> = Object.values(SOUS_CATEGORIES_BY_TYPE)
+  .flat()
+  .reduce((acc, s) => ({ ...acc, [s.value]: s.label }), {});
+
 export const statusColor: Record<string, string> = {
   ACTIVE: 'badge-active',
   PAID: 'badge-active',
