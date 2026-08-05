@@ -206,6 +206,9 @@ export function SaisirProductionForm({ companyCode, returnPath }: Props) {
 
       return apiHelper.post('/contracts', {
         ...data,
+        /* Le champ vaut '' pour les types sans précision : on l'omet plutôt
+           que d'envoyer une chaîne vide, que la validation refuserait */
+        sousCategorie: data.sousCategorie || undefined,
         clientId:  resolvedClientId,
         companyId: selectedCompanyId,
         primeHT:   data.primeTTC,

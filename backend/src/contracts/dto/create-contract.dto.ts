@@ -1,4 +1,5 @@
 import { IsString, IsNumber, IsDateString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 const INSURANCE_TYPES = ['AUTO','MOTO','HOME','HEALTH','PROFESSIONAL','DECENNIAL','TRANSPORT','LIFE','WORK_ACCIDENT','RC_EXPLOITATION','RC_PRO','OTHER','PETIT_TAXI','GRAND_TAXI','TRIPORTEUR','FRONTIERE','VOYAGE','ASSISTANCE','ASSISTANCE_MEDICALE'];
@@ -8,7 +9,12 @@ const SOUS_CATEGORIES = ['TOURISME','C1','C2','DIVERS','MOTOCYCLE','AUTRESMOTO']
 
 export class CreateContractDto {
   @ApiProperty() @IsString() @IsIn(INSURANCE_TYPES) type: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @IsIn(SOUS_CATEGORIES) sousCategorie?: string;
+  /* @IsOptional() n'ignore que null/undefined : un formulaire qui envoie une
+     chaîne vide (type sans précision) doit la voir traitée comme absente. */
+  @ApiPropertyOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsOptional() @IsString() @IsIn(SOUS_CATEGORIES)
+  sousCategorie?: string;
   @ApiProperty() @IsString() clientId: string;
   @ApiProperty() @IsString() companyId: string;
   @ApiPropertyOptional() @IsOptional() @IsString() contractNumber?: string;
