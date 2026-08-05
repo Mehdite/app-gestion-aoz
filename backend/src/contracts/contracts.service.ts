@@ -565,8 +565,17 @@ export class ContractsService {
     return { imported, errors };
   }
 
+  /** Même règle que ClientsService : on part du dernier numéro attribué,
+   *  car un compteur basé sur le total rejoue les trous laissés par les
+   *  suppressions et provoque une collision. */
   private async generateClientNumber(): Promise<string> {
-    const count = await this.prisma.client.count();
-    return `AOZ-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
+    const prefixe = `AOZ-${new Date().getFullYear()}-`;
+    const dernier = await this.prisma.client.findFirst({
+      where: { clientNumber: { startsWith: prefixe } },
+      orderBy: { clientNumber: 'desc' },
+      select: { clientNumber: true },
+    });
+    const rang = dernier ? Number(dernier.clientNumber.slice(prefixe.length)) || 0 : 0;
+    return `${prefixe}${String(rang + 1).padStart(5, '0')}`;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { paginate } from '../common/pagination';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -18,8 +18,23 @@ export class ClientsService {
       if (existing) throw new ConflictException('Un client avec cet ICE existe déjà');
     }
 
-    const clientNumber = await this.generateClientNumber();
-    return this.prisma.client.create({ data: { ...dto, clientNumber } });
+    /* Deux saisies simultanées peuvent viser le même numéro : on retente
+       plutôt que de renvoyer une erreur incompréhensible à l'agent. */
+    for (let tentative = 0; tentative < 5; tentative++) {
+      try {
+        const clientNumber = await this.generateClientNumber();
+        return await this.prisma.client.create({ data: { ...dto, clientNumber } });
+      } catch (err: any) {
+        const collisionNumero =
+          err?.code === 'P2002' && String(err?.meta?.target ?? '').includes('clientNumber');
+        if (collisionNumero) continue;
+        const detail = err?.meta?.cause ?? err?.message ?? 'erreur inconnue';
+        throw new BadRequestException(`Impossible de créer le client : ${detail}`);
+      }
+    }
+    throw new ConflictException(
+      "Impossible d'attribuer un numéro de client — réessayez dans un instant",
+    );
   }
 
   async findAll(params: {
@@ -146,8 +161,17 @@ export class ClientsService {
     return { deleted: result.count };
   }
 
+  /** Numérote à partir du DERNIER numéro attribué, pas du nombre de clients :
+   *  un client supprimé creuse un trou, et un compteur basé sur le total
+   *  regénérerait alors un numéro déjà pris. */
   private async generateClientNumber(): Promise<string> {
-    const count = await this.prisma.client.count();
-    return `AOZ-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
+    const prefixe = `AOZ-${new Date().getFullYear()}-`;
+    const dernier = await this.prisma.client.findFirst({
+      where: { clientNumber: { startsWith: prefixe } },
+      orderBy: { clientNumber: 'desc' },
+      select: { clientNumber: true },
+    });
+    const rang = dernier ? Number(dernier.clientNumber.slice(prefixe.length)) || 0 : 0;
+    return `${prefixe}${String(rang + 1).padStart(5, '0')}`;
   }
 }
