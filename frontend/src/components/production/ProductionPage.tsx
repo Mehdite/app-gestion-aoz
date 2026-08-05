@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { cn, clientName, statusColor, statusLabels, formatDate, formatCurrency, insuranceTypeLabels } from '@/lib/utils';
 import { Plus, Search, Eye, RefreshCw, Download, Upload, CheckCircle2, XCircle, X, AlertTriangle, Pencil, Save, Trash2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CreditSection } from './CreditSection';
 
 const STATUS_OPTIONS = ['', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
 
@@ -56,6 +57,10 @@ export function ProductionPage({ companyCode, title }: Props) {
 
   const [editing, setEditing] = useState<EditState | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  /* Incrémenté après toute opération qui modifie un reste dû, pour que la
+     section Crédit se recalcule sans rechargement de page */
+  const [creditRefresh, setCreditRefresh] = useState(0);
+  const rafraichirCredit = () => setCreditRefresh((n) => n + 1);
 
   const queryKey = ['contracts', { companyCode, search, status, type, mois, page }];
 
@@ -74,7 +79,7 @@ export function ProductionPage({ companyCode, title }: Props) {
 
   const renewMut = useMutation({
     mutationFn: (id: string) => apiHelper.post(`/contracts/${id}/renew`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey }); toast.success('Renouvelé'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey }); rafraichirCredit(); toast.success('Renouvelé'); },
     onError:   () => toast.error('Erreur renouvellement'),
   });
 
@@ -82,6 +87,7 @@ export function ProductionPage({ companyCode, title }: Props) {
     mutationFn: ({ id, ...body }: any) => apiHelper.put(`/contracts/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey });
+      rafraichirCredit();
       toast.success('Production mise à jour');
       setEditing(null);
     },
@@ -90,7 +96,7 @@ export function ProductionPage({ companyCode, title }: Props) {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiHelper.delete(`/contracts/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey }); toast.success('Production supprimée'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey }); rafraichirCredit(); toast.success('Production supprimée'); },
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
@@ -98,6 +104,7 @@ export function ProductionPage({ companyCode, title }: Props) {
     mutationFn: (ids: string[]) => api.delete('/contracts/bulk', { data: { ids } }),
     onSuccess: (_data, ids) => {
       qc.invalidateQueries({ queryKey });
+      rafraichirCredit();
       toast.success(`${ids.length} production(s) supprimée(s)`);
       setSelected([]);
     },
@@ -159,6 +166,7 @@ export function ProductionPage({ companyCode, title }: Props) {
       if (result.imported > 0) {
         qc.invalidateQueries({ queryKey });
         qc.invalidateQueries({ queryKey: ['clients-all'] });
+        rafraichirCredit();
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Erreur lors de l\'import');
@@ -504,6 +512,9 @@ export function ProductionPage({ companyCode, title }: Props) {
             </div>
           )}
         </div>
+
+        {/* Crédit — impayés de cette production, toutes périodes confondues */}
+        <CreditSection companyCode={companyCode} refreshKey={creditRefresh} />
       </div>
     </div>
   );

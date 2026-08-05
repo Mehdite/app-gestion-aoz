@@ -114,6 +114,50 @@ export class ContractsService {
     return { data, meta: { total, page: p, limit: l, totalPages: Math.ceil(total / l) } };
   }
 
+  /** Clients n'ayant pas soldé leur prime, pour une compagnie donnée.
+   *  Volontairement indépendant des filtres de la liste : une créance de
+   *  janvier doit rester visible quand on consulte le mois de juillet.
+   *  Le reste dû étant calculé (primeTTC - reduction - primePaye) et non
+   *  stocké, le filtrage se fait après lecture. */
+  async getCredits(companyCode?: string) {
+    const where: any = { status: { not: 'CANCELLED' } };
+    if (companyCode) where.company = { code: companyCode };
+
+    const contracts = await this.prisma.contract.findMany({
+      where,
+      select: {
+        id: true, contractNumber: true, type: true, status: true,
+        primeTTC: true, reduction: true, primePaye: true,
+        souscriptionDate: true, effectiveDate: true, expiryDate: true, createdAt: true,
+        client:  { select: { id: true, firstName: true, lastName: true, companyName: true, type: true, phone: true } },
+        company: { select: { name: true, code: true } },
+      },
+    });
+
+    const credits = contracts
+      .map((c) => ({
+        ...c,
+        reste: Number(c.primeTTC) - Number(c.reduction) - Number(c.primePaye),
+      }))
+      .filter((c) => c.reste > 0.005)          // tolérance : évite les résidus de calcul décimal
+      .sort((a, b) => b.reste - a.reste);      // les plus grosses créances en premier
+
+    const totalCredit  = credits.reduce((s, c) => s + c.reste, 0);
+    const totalEncaisse = credits.reduce((s, c) => s + Number(c.primePaye), 0);
+    const totalDu      = credits.reduce((s, c) => s + Number(c.primeTTC) - Number(c.reduction), 0);
+
+    return {
+      credits,
+      stats: {
+        count: credits.length,
+        totalCredit,
+        totalEncaisse,
+        totalDu,
+        clients: new Set(credits.map((c) => c.client.id)).size,
+      },
+    };
+  }
+
   async generateProductionExcel(params: {
     search?: string; status?: string; type?: string; companyCode?: string; mois?: string;
   }): Promise<Buffer> {

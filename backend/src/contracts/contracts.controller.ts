@@ -61,6 +61,12 @@ export class ContractsController {
     return this.service.findAll({ page, limit, search, status, type, companyId, companyCode, clientId, expiringIn, mois });
   }
 
+  @Get('credits')
+  @ApiOperation({ summary: 'Clients avec un reste dû, par compagnie' })
+  getCredits(@Query('companyCode') companyCode?: string) {
+    return this.service.getCredits(companyCode);
+  }
+
   @Get('excel')
   @ApiOperation({ summary: 'Télécharger la production (filtrée) en Excel' })
   async downloadExcel(
