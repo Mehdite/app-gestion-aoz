@@ -25,6 +25,8 @@ export default function DashboardPage() {
   const recentContracts = data?.data?.recentContracts ?? [];
   const recentClaims    = data?.data?.recentClaims ?? [];
 
+  const caCie = stats.caParCompagnie ?? {};
+
   const kpis = [
     {
       label: 'Clients actifs',
@@ -38,21 +40,27 @@ export default function DashboardPage() {
       icon: FileCheck,
       color: 'text-green-600 bg-green-50',
     },
+    /* CA du mois ventilé par compagnie */
     {
-      label: 'CA du mois',
-      value: formatCurrency(stats.monthRevenue ?? 0),
+      label: 'CA du mois AXA',
+      value: formatCurrency(caCie.AXA?.revenue ?? 0),
       icon: Banknote,
       color: 'text-purple-600 bg-purple-50',
-      sub: (stats.monthRistournes ?? 0) > 0
-        ? `Encaissé : ${formatCurrency(stats.monthEncaissement ?? 0)} · Ristournes : −${formatCurrency(stats.monthRistournes)}`
-        : `Encaissé : ${formatCurrency(stats.monthEncaissement ?? 0)}`,
+      sub: `Encaissé : ${formatCurrency(caCie.AXA?.encaisse ?? 0)}`,
     },
     {
-      label: 'CA total',
-      value: formatCurrency(stats.totalCA ?? 0),
-      icon: TrendingUp,
+      label: 'CA du mois CAT',
+      value: formatCurrency(caCie.CAT?.revenue ?? 0),
+      icon: Banknote,
+      color: 'text-amber-600 bg-amber-50',
+      sub: `Encaissé : ${formatCurrency(caCie.CAT?.encaisse ?? 0)}`,
+    },
+    {
+      label: 'CA du mois Cover EDGE',
+      value: formatCurrency(caCie.COVER_EDGE?.revenue ?? 0),
+      icon: Banknote,
       color: 'text-brand-600 bg-brand-50',
-      sub: `Reste : ${formatCurrency(stats.totalReste ?? 0)}`,
+      sub: `Encaissé : ${formatCurrency(caCie.COVER_EDGE?.encaisse ?? 0)}`,
     },
     {
       label: 'Échéances 30j',

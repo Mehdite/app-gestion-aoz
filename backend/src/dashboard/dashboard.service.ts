@@ -18,6 +18,7 @@ export class DashboardService {
       totalPrimeTTC, totalReste,
       monthRistournes, totalRistournes,
       expiringContracts,
+      moisParCompagnie, ristournesMoisDetail, compagnies,
       recentContracts, recentClaims, revenuByMonth,
     ] = await Promise.all([
       /* Clients & contrats */
@@ -61,6 +62,19 @@ export class DashboardService {
         where: { status: 'ACTIVE', expiryDate: { lte: in30Days, gte: now } },
       }),
 
+      /* CA du mois ventilé par compagnie */
+      this.prisma.contract.groupBy({
+        by: ['companyId'],
+        where: { souscriptionDate: { gte: startOfMonth, lte: endOfMonth } },
+        _sum: { primeTTC: true, primePaye: true },
+      }),
+      /* Ristournes du mois avec leur compagnie, pour les déduire de la bonne */
+      this.prisma.ristourne.findMany({
+        where: { dateEffet: { gte: startOfMonth, lte: endOfMonth } },
+        select: { montant: true, contract: { select: { companyId: true } } },
+      }),
+      this.prisma.company.findMany({ select: { id: true, code: true, name: true } }),
+
       /* Récents */
       this.prisma.contract.findMany({
         take: 5, orderBy: { createdAt: 'desc' },
@@ -99,6 +113,32 @@ export class DashboardService {
       ? Math.round((encaisseTotal / netAFacturer) * 100)
       : 0;
 
+    /* CA du mois par compagnie. Les trois cartes sont toujours présentes,
+       même à zéro : une compagnie absente du tableau de bord ferait douter
+       d'un oubli de saisie. */
+    const codeParId = new Map(compagnies.map((c) => [c.id, c.code]));
+    const caParCompagnie: Record<string, { revenue: number; encaisse: number }> = {
+      AXA:        { revenue: 0, encaisse: 0 },
+      CAT:        { revenue: 0, encaisse: 0 },
+      COVER_EDGE: { revenue: 0, encaisse: 0 },
+    };
+
+    for (const ligne of moisParCompagnie) {
+      const code = codeParId.get(ligne.companyId);
+      if (!code || !caParCompagnie[code]) continue;
+      caParCompagnie[code].revenue  += Number(ligne._sum.primeTTC  ?? 0);
+      caParCompagnie[code].encaisse += Number(ligne._sum.primePaye ?? 0);
+    }
+
+    /* Une ristourne se déduit du CA de SA compagnie, pas du total global */
+    for (const r of ristournesMoisDetail) {
+      const code = codeParId.get(r.contract.companyId);
+      if (!code || !caParCompagnie[code]) continue;
+      const montant = Number(r.montant);
+      caParCompagnie[code].revenue  -= montant;
+      caParCompagnie[code].encaisse -= montant;
+    }
+
     return {
       kpis: {
         totalClients,
@@ -115,6 +155,7 @@ export class DashboardService {
         totalEncaisse:     encaisseTotal,
         expiringContracts,
         tauxEncaissement,
+        caParCompagnie,
       },
       recentContracts,
       recentClaims,
