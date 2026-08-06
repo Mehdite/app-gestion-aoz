@@ -18,7 +18,6 @@ export class DashboardService {
       totalPrimeTTC, totalReste,
       monthRistournes, totalRistournes,
       expiringContracts,
-      quotes, convertedQuotes,
       recentContracts, recentClaims, revenuByMonth,
     ] = await Promise.all([
       /* Clients & contrats */
@@ -62,10 +61,6 @@ export class DashboardService {
         where: { status: 'ACTIVE', expiryDate: { lte: in30Days, gte: now } },
       }),
 
-      /* Prospects / conversion */
-      this.prisma.quote.count(),
-      this.prisma.quote.count({ where: { status: 'CONVERTED' } }),
-
       /* Récents */
       this.prisma.contract.findMany({
         take: 5, orderBy: { createdAt: 'desc' },
@@ -92,6 +87,18 @@ export class DashboardService {
     const monthRistournesValue = Number(monthRistournes._sum.montant ?? 0);
     const totalRistournesValue = Number(totalRistournes._sum.montant ?? 0);
 
+    const caTotalValue    = Number(totalPrimeTTC._sum.primeTTC ?? 0) - totalRistournesValue;
+    const encaisseTotal   = Number(totalReste._sum.primePaye ?? 0);
+    const reductionTotale = Number(totalReste._sum.reduction ?? 0);
+
+    /* Part des primes réellement encaissée. Rapportée à la prime NETTE
+       (après réduction accordée), sinon une remise ferait chuter le taux
+       alors que le client a soldé son dû. */
+    const netAFacturer = Math.max(0, caTotalValue - reductionTotale);
+    const tauxEncaissement = netAFacturer > 0
+      ? Math.round((encaisseTotal / netAFacturer) * 100)
+      : 0;
+
     return {
       kpis: {
         totalClients,
@@ -102,11 +109,12 @@ export class DashboardService {
         monthEncaissement: Number(monthPrimePaye._sum.primePaye ?? 0) - monthRistournesValue,
         monthRistournes:   monthRistournesValue,
         monthCommissions:  Number(monthCommissions._sum.netAmount ?? 0),
-        totalCA:           Number(totalPrimeTTC._sum.primeTTC ?? 0) - totalRistournesValue,
+        totalCA:           caTotalValue,
         totalRistournes:   totalRistournesValue,
         totalReste:        totalResteValue,
+        totalEncaisse:     encaisseTotal,
         expiringContracts,
-        conversionRate: quotes > 0 ? Math.round((convertedQuotes / quotes) * 100) : 0,
+        tauxEncaissement,
       },
       recentContracts,
       recentClaims,

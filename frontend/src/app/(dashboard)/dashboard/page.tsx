@@ -67,10 +67,11 @@ export default function DashboardPage() {
       color: 'text-red-600 bg-red-50',
     },
     {
-      label: 'Taux conversion',
-      value: `${stats.conversionRate ?? 0}%`,
+      label: 'Taux encaissement',
+      value: `${stats.tauxEncaissement ?? 0}%`,
       icon: Target,
       color: 'text-teal-600 bg-teal-50',
+      sub: `Encaissé : ${formatCurrency(stats.totalEncaisse ?? 0)}`,
     },
   ];
 
