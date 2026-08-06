@@ -95,9 +95,9 @@ export class ContractsService {
       this.prisma.contract.findMany({
         where, skip, take,
         /* Production classée de la plus récente à la plus ancienne.
-           `nulls: 'last'` évite qu'une ligne sans date remonte en tête. */
+           La date de saisie départage deux souscriptions du même jour. */
         orderBy: [
-          { souscriptionDate: { sort: 'desc', nulls: 'last' } },
+          { souscriptionDate: 'desc' },
           { createdAt: 'desc' },
         ],
         include: {
@@ -166,7 +166,7 @@ export class ContractsService {
       where,
       /* Même ordre qu'à l'écran, sinon le fichier téléchargé surprend */
       orderBy: [
-        { souscriptionDate: { sort: 'desc', nulls: 'last' } },
+        { souscriptionDate: 'desc' },
         { createdAt: 'desc' },
       ],
       include: {
@@ -328,6 +328,8 @@ export class ContractsService {
         frequency: contract.frequency, effectiveDate: newEffective,
         expiryDate: newExpiry, autoRenew: contract.autoRenew, renewedAt: new Date(),
         renewedFromId: contract.id,
+        /* Le renouvellement est souscrit aujourd'hui : son CA revient au mois courant */
+        souscriptionDate: new Date(),
       },
     });
   }
@@ -556,6 +558,9 @@ export class ContractsService {
             frequency,
             effectiveDate,
             expiryDate,
+            /* Reprise d'historique : on rattache le CA au mois de la date d'effet,
+               sinon un import de plusieurs mois s'écraserait sur le mois courant */
+            souscriptionDate: effectiveDate,
             status:         'ACTIVE',
             notes:          notes || null,
           },

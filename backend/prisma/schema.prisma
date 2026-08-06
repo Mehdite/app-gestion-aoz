@@ -214,7 +214,10 @@ model Contract {
   primePaye         Decimal   @default(0)
   frequency         String    @default("ANNUAL")  // MONTHLY | QUARTERLY | SEMI_ANNUAL | ANNUAL
 
-  souscriptionDate  DateTime?   // date de souscription — sert au classement de la production
+  /// Date de souscription : classement de la production ET rattachement du CA
+  /// à un mois. Obligatoire avec valeur par défaut : un contrat sans cette
+  /// date disparaîtrait du chiffre d'affaires.
+  souscriptionDate  DateTime  @default(now())
   effectiveDate     DateTime
   expiryDate        DateTime
   renewedAt         DateTime?

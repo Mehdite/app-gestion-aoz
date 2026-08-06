@@ -27,14 +27,16 @@ export class DashboardService {
       this.prisma.claim.count(),
       this.prisma.claim.count({ where: { status: { in: ['DECLARED', 'IN_PROGRESS'] } } }),
 
-      /* CA du mois = somme primeTTC des contrats créés ce mois */
+      /* CA du mois = primes TTC des productions SOUSCRITES ce mois.
+         On se base sur la date de souscription et non sur la date de saisie :
+         une production de juillet enregistrée en août appartient à juillet. */
       this.prisma.contract.aggregate({
-        where: { createdAt: { gte: startOfMonth, lte: endOfMonth } },
+        where: { souscriptionDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { primeTTC: true },
       }),
-      /* Encaissement du mois = somme primePaye des contrats créés ce mois */
+      /* Encaissement du mois = primes payées sur ces mêmes productions */
       this.prisma.contract.aggregate({
-        where: { createdAt: { gte: startOfMonth, lte: endOfMonth } },
+        where: { souscriptionDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { primePaye: true },
       }),
       /* Commissions du mois */
@@ -138,8 +140,9 @@ export class DashboardService {
       const end   = new Date(year, month,     0, 23, 59, 59);
 
       const [rev, comm, rist] = await Promise.all([
+        /* Même règle que les KPI : on rattache au mois de souscription */
         this.prisma.contract.aggregate({
-          where: { createdAt: { gte: start, lte: end } },
+          where: { souscriptionDate: { gte: start, lte: end } },
           _sum: { primeTTC: true, primePaye: true },
         }),
         this.prisma.commission.aggregate({

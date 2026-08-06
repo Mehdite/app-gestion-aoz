@@ -203,6 +203,8 @@ export class QuittancesService {
               frequency:     'ANNUAL',
               effectiveDate: q.dateEffet,
               expiryDate:    q.dateExpiration,
+              /* Reprise d'historique : le CA revient au mois de la date d'effet */
+              souscriptionDate: q.dateEffet,
               status:        'ACTIVE',
               notes:         `Import quittances ${q.moisImport}`,
             },

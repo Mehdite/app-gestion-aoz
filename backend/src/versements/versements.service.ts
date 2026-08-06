@@ -41,7 +41,7 @@ export class VersementsService {
        encaissée en mai — sur l'année entière, les deux totaux doivent se rejoindre. */
     const [primes, ristournes] = await Promise.all([
       this.prisma.contract.aggregate({
-        where: { createdAt: { gte: start, lt: end } },
+        where: { souscriptionDate: { gte: start, lt: end } },
         _sum: { primePaye: true },
       }),
       this.prisma.ristourne.aggregate({
