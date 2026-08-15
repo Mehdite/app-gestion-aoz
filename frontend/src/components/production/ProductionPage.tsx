@@ -26,7 +26,17 @@ type EditState = {
   primeTTC: number;
   reduction: number;
   primePaye: number;
+  souscriptionDate: string;
+  effectiveDate: string;
+  expiryDate: string;
   notes: string;
+  /* Le client, pour corriger une faute de frappe sans quitter la liste */
+  clientId: string;
+  clientType: string;
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  phone: string;
 };
 
 /* Route du formulaire de saisie par compagnie */
@@ -84,14 +94,34 @@ export function ProductionPage({ companyCode, title }: Props) {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...body }: any) => apiHelper.put(`/contracts/${id}`, body),
+    mutationFn: async (e: EditState) => {
+      /* Le client d'abord : si sa correction échoue (téléphone invalide...),
+         on n'enregistre pas un contrat à moitié corrigé */
+      await apiHelper.put(`/clients/${e.clientId}`, e.clientType === 'COMPANY'
+        ? { companyName: e.companyName.trim(), phone: e.phone.trim() }
+        : { firstName: e.firstName.trim(), lastName: e.lastName.trim(), phone: e.phone.trim() });
+      return apiHelper.put(`/contracts/${e.id}`, {
+        contractNumber:   e.contractNumber.trim() || undefined,
+        primeTTC:         e.primeTTC,
+        reduction:        e.reduction,
+        primePaye:        e.primePaye,
+        souscriptionDate: e.souscriptionDate,
+        effectiveDate:    e.effectiveDate,
+        expiryDate:       e.expiryDate,
+        notes:            e.notes || undefined,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey });
+      qc.invalidateQueries({ queryKey: ['clients-all'] });
       rafraichirCredit();
       toast.success('Production mise à jour');
       setEditing(null);
     },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Erreur lors de la mise à jour'));
+    },
   });
 
   const deleteMut = useMutation({
@@ -182,8 +212,35 @@ export function ProductionPage({ companyCode, title }: Props) {
       primeTTC:       Number(c.primeTTC)  || 0,
       reduction:      Number(c.reduction) || 0,
       primePaye:      Number(c.primePaye) || 0,
+      souscriptionDate: String(c.souscriptionDate ?? c.createdAt ?? '').slice(0, 10),
+      effectiveDate:  String(c.effectiveDate ?? '').slice(0, 10),
+      expiryDate:     String(c.expiryDate ?? '').slice(0, 10),
       notes:          c.notes ?? '',
+      clientId:       c.client?.id ?? '',
+      clientType:     c.client?.type ?? 'INDIVIDUAL',
+      firstName:      c.client?.firstName ?? '',
+      lastName:       c.client?.lastName ?? '',
+      companyName:    c.client?.companyName ?? '',
+      phone:          c.client?.phone ?? '',
     });
+  }
+
+  function saveEdit(e: EditState) {
+    if (e.clientType === 'INDIVIDUAL' && !e.firstName.trim() && !e.lastName.trim()) {
+      toast.error('Le nom du client ne peut pas être vide'); return;
+    }
+    if (e.clientType === 'COMPANY' && !e.companyName.trim()) {
+      toast.error('La raison sociale ne peut pas être vide'); return;
+    }
+    if (e.phone.trim().length < 10) { toast.error('Téléphone : 10 chiffres minimum'); return; }
+    if (!(e.primeTTC > 0)) { toast.error('La prime TTC doit être supérieure à zéro'); return; }
+    if (!e.effectiveDate || !e.expiryDate || !e.souscriptionDate) {
+      toast.error('Les trois dates sont requises'); return;
+    }
+    if (new Date(e.expiryDate) <= new Date(e.effectiveDate)) {
+      toast.error("L'échéance doit être postérieure à la date d'effet"); return;
+    }
+    updateMut.mutate(e);
   }
 
   const resteEditing = editing
@@ -439,63 +496,139 @@ export function ProductionPage({ companyCode, title }: Props) {
                       {isEditing && editing && (
                         <tr key={`edit-${c.id}`}>
                           <td colSpan={13} className="bg-brand-50 border-b border-brand-100 px-4 py-4">
-                            <div className="flex flex-wrap items-end gap-4">
-                              <div>
-                                <p className="text-xs text-gray-500 mb-1">N° Police</p>
-                                <p className="text-sm font-mono font-semibold text-gray-800">{editing.contractNumber}</p>
+                            <div className="space-y-4">
+
+                              {/* Ligne 1 — client et police */}
+                              <div className="flex flex-wrap items-end gap-4">
+                                {editing.clientType === 'COMPANY' ? (
+                                  <div className="flex-1 min-w-52">
+                                    <label className="text-xs text-gray-600 font-medium mb-1 block">Raison sociale</label>
+                                    <input
+                                      type="text" className="input w-full text-sm"
+                                      value={editing.companyName}
+                                      onChange={e => setEditing(p => p && ({ ...p, companyName: e.target.value }))}
+                                    />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div>
+                                      <label className="text-xs text-gray-600 font-medium mb-1 block">Prénom</label>
+                                      <input
+                                        type="text" className="input w-40 text-sm"
+                                        value={editing.firstName}
+                                        onChange={e => setEditing(p => p && ({ ...p, firstName: e.target.value }))}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-600 font-medium mb-1 block">Nom</label>
+                                      <input
+                                        type="text" className="input w-44 text-sm"
+                                        value={editing.lastName}
+                                        onChange={e => setEditing(p => p && ({ ...p, lastName: e.target.value }))}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Téléphone</label>
+                                  <input
+                                    type="tel" className="input w-36 text-sm"
+                                    value={editing.phone}
+                                    onChange={e => setEditing(p => p && ({ ...p, phone: e.target.value }))}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">N° Police</label>
+                                  <input
+                                    type="text" className="input w-44 text-sm font-mono"
+                                    value={editing.contractNumber}
+                                    onChange={e => setEditing(p => p && ({ ...p, contractNumber: e.target.value }))}
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs text-gray-500 mb-1">Prime TTC</p>
-                                <p className="text-sm font-semibold text-gray-800">{formatCurrency(editing.primeTTC)}</p>
+
+                              {/* Ligne 2 — montants et dates */}
+                              <div className="flex flex-wrap items-end gap-4">
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Prime TTC (MAD)</label>
+                                  <input
+                                    type="number" min="0" step="0.01" className="input w-32 text-sm"
+                                    value={editing.primeTTC}
+                                    onChange={e => setEditing(p => p && ({ ...p, primeTTC: parseFloat(e.target.value) || 0 }))}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Réduction (MAD)</label>
+                                  <input
+                                    type="number" min="0" step="0.01" className="input w-28 text-sm"
+                                    value={editing.reduction}
+                                    onChange={e => setEditing(p => p && ({ ...p, reduction: parseFloat(e.target.value) || 0 }))}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Encaissement réel (MAD)</label>
+                                  <input
+                                    type="number" min="0" step="0.01" className="input w-32 text-sm"
+                                    value={editing.primePaye}
+                                    onChange={e => setEditing(p => p && ({ ...p, primePaye: parseFloat(e.target.value) || 0 }))}
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Reste client</p>
+                                  <p className={cn('text-sm font-bold', resteEditing > 0 ? 'text-red-600' : 'text-green-600')}>
+                                    {resteEditing > 0 ? formatCurrency(resteEditing) : '✓ Soldé'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Souscription</label>
+                                  <input
+                                    type="date" className="input w-38 text-sm"
+                                    value={editing.souscriptionDate}
+                                    onChange={e => setEditing(p => p && ({ ...p, souscriptionDate: e.target.value }))}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Date d&apos;effet</label>
+                                  <input
+                                    type="date" className="input w-38 text-sm"
+                                    value={editing.effectiveDate}
+                                    onChange={e => setEditing(p => p && ({ ...p, effectiveDate: e.target.value }))}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Échéance</label>
+                                  <input
+                                    type="date" className="input w-38 text-sm"
+                                    value={editing.expiryDate}
+                                    onChange={e => setEditing(p => p && ({ ...p, expiryDate: e.target.value }))}
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <label className="text-xs text-gray-600 font-medium mb-1 block">Réduction (MAD)</label>
-                                <input
-                                  type="number" min="0" step="0.01" className="input w-32 text-sm"
-                                  value={editing.reduction}
-                                  onChange={e => setEditing(p => p && ({ ...p, reduction: parseFloat(e.target.value) || 0 }))}
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-gray-600 font-medium mb-1 block">Encaissement réel (MAD)</label>
-                                <input
-                                  type="number" min="0" step="0.01" className="input w-36 text-sm"
-                                  value={editing.primePaye}
-                                  onChange={e => setEditing(p => p && ({ ...p, primePaye: parseFloat(e.target.value) || 0 }))}
-                                />
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500 mb-1">Reste client</p>
-                                <p className={cn('text-sm font-bold', resteEditing > 0 ? 'text-red-600' : 'text-green-600')}>
-                                  {resteEditing > 0 ? formatCurrency(resteEditing) : '✓ Soldé'}
-                                </p>
-                              </div>
-                              <div className="flex-1 min-w-48">
-                                <label className="text-xs text-gray-600 font-medium mb-1 block">Notes</label>
-                                <input
-                                  type="text" className="input text-sm w-full"
-                                  value={editing.notes}
-                                  onChange={e => setEditing(p => p && ({ ...p, notes: e.target.value }))}
-                                  placeholder="Remarque..."
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => updateMut.mutate({
-                                    id:        editing.id,
-                                    reduction: editing.reduction,
-                                    primePaye: editing.primePaye,
-                                    notes:     editing.notes || undefined,
-                                  })}
-                                  disabled={updateMut.isPending}
-                                  className="btn-primary flex items-center gap-2 py-2 text-sm"
-                                >
-                                  <Save className="w-4 h-4" />
-                                  {updateMut.isPending ? 'Enregistrement...' : 'Enregistrer'}
-                                </button>
-                                <button onClick={() => setEditing(null)} className="btn-secondary py-2 text-sm">
-                                  Annuler
-                                </button>
+
+                              {/* Ligne 3 — notes et actions */}
+                              <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex-1 min-w-48">
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Notes</label>
+                                  <input
+                                    type="text" className="input text-sm w-full"
+                                    value={editing.notes}
+                                    onChange={e => setEditing(p => p && ({ ...p, notes: e.target.value }))}
+                                    placeholder="Remarque..."
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => saveEdit(editing)}
+                                    disabled={updateMut.isPending}
+                                    className="btn-primary flex items-center gap-2 py-2 text-sm"
+                                  >
+                                    <Save className="w-4 h-4" />
+                                    {updateMut.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                                  </button>
+                                  <button onClick={() => setEditing(null)} className="btn-secondary py-2 text-sm">
+                                    Annuler
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </td>

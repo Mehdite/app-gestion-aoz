@@ -266,7 +266,19 @@ export class ContractsService {
 
   async update(id: string, dto: UpdateContractDto, changedBy: string) {
     const existing = await this.findOne(id);
-    const contract = await this.prisma.contract.update({ where: { id }, data: dto });
+
+    const data: any = { ...dto };
+    /* Les dates arrivent en "AAAA-MM-JJ" depuis le formulaire : Prisma exige
+       un vrai DateTime, on convertit ce qui est présent */
+    if (data.souscriptionDate) data.souscriptionDate = new Date(data.souscriptionDate);
+    if (data.effectiveDate)    data.effectiveDate    = new Date(data.effectiveDate);
+    if (data.expiryDate)       data.expiryDate       = new Date(data.expiryDate);
+    /* À la création, primeHT = primeTTC (l'agent ne distingue pas les deux).
+       Une correction de prime doit suivre la même règle, sinon les commissions
+       resteraient calculées sur l'ancien montant. */
+    if (data.primeTTC !== undefined && data.primeHT === undefined) data.primeHT = data.primeTTC;
+
+    const contract = await this.prisma.contract.update({ where: { id }, data });
     const changes = Object.entries(dto).map(([field, newValue]) => ({
       contractId: id, field,
       oldValue: String((existing as any)[field] ?? ''),
