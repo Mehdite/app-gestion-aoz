@@ -458,6 +458,9 @@ export function ProductionPage({ companyCode, title }: Props) {
                         </td>
                         <td className="table-cell">
                           <span className={cn('badge', statusColor[c.status])}>{statusLabels[c.status]}</span>
+                          {c.estProvisoire && (
+                            <p className="mt-1"><span className="badge bg-amber-50 text-amber-700">Provisoire</span></p>
+                          )}
                         </td>
                         <td className="table-cell">
                           <div className="flex items-center gap-1">

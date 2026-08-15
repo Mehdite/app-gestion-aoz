@@ -95,6 +95,7 @@ export default function DetailProductionPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-xl font-bold text-gray-900 font-mono">{c.contractNumber}</h2>
                 <span className={cn('badge', statusColor[c.status])}>{statusLabels[c.status] ?? c.status}</span>
+                {c.estProvisoire && <span className="badge bg-amber-50 text-amber-700">Attestation provisoire</span>}
               </div>
               <p className="text-sm text-gray-500 mt-1">
                 {c.company?.name} · {insuranceTypeLabels[c.type] ?? c.type}
@@ -178,9 +179,12 @@ export default function DetailProductionPage() {
             </h3>
             <Ligne label="Date de souscription">{formatDate(c.souscriptionDate ?? c.createdAt)}</Ligne>
             <Ligne label="Date d'effet">{formatDate(c.effectiveDate)}</Ligne>
-            <Ligne label="Date d'échéance">
+            <Ligne label={c.estProvisoire ? 'Échéance provisoire' : "Date d'échéance"}>
               <span className={cn(joursRestants < 0 && 'text-red-600')}>{formatDate(c.expiryDate)}</span>
             </Ligne>
+            {c.estProvisoire && c.echeanceDefinitive && (
+              <Ligne label="Échéance définitive prévue">{formatDate(c.echeanceDefinitive)}</Ligne>
+            )}
             <Ligne label="Échéance">
               {c.status === 'CANCELLED'
                 ? <span className="text-gray-400">Contrat annulé</span>
@@ -198,7 +202,14 @@ export default function DetailProductionPage() {
             <h3 className="flex items-center gap-2 font-semibold text-gray-800 mb-3">
               <Banknote className="w-4 h-4 text-brand-600" /> Primes
             </h3>
-            <Ligne label="Prime TTC"><span className="tabular-nums">{formatCurrency(ttc)}</span></Ligne>
+            <Ligne label={c.estProvisoire ? 'Prime TTC provisoire (1er mois)' : 'Prime TTC'}>
+              <span className="tabular-nums">{formatCurrency(ttc)}</span>
+            </Ligne>
+            {c.estProvisoire && c.primeDefinitive != null && (
+              <Ligne label="Prime définitive prévue">
+                <span className="tabular-nums">{formatCurrency(c.primeDefinitive)}</span>
+              </Ligne>
+            )}
             <Ligne label="Réduction">
               {reduction > 0 ? <span className="tabular-nums">− {formatCurrency(reduction)}</span> : vide}
             </Ligne>

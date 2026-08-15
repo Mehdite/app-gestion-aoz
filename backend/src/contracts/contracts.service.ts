@@ -29,6 +29,7 @@ export class ContractsService {
           souscriptionDate: rest.souscriptionDate ? new Date(rest.souscriptionDate) : new Date(),
           effectiveDate: new Date(rest.effectiveDate),
           expiryDate:    new Date(rest.expiryDate),
+          echeanceDefinitive: rest.echeanceDefinitive ? new Date(rest.echeanceDefinitive) : null,
         },
         include: { client: true, company: true, product: true },
       });
@@ -158,6 +159,74 @@ export class ContractsService {
     };
   }
 
+  /** Attestations provisoires en attente de remise de la définitive */
+  async getProvisoires(companyCode?: string) {
+    const where: any = { estProvisoire: true, status: { not: 'CANCELLED' } };
+    if (companyCode) where.company = { code: companyCode };
+
+    const contracts = await this.prisma.contract.findMany({
+      where,
+      orderBy: { expiryDate: 'asc' },   // les plus urgentes en premier
+      select: {
+        id: true, contractNumber: true, type: true, sousCategorie: true, status: true,
+        primeTTC: true, primeDefinitive: true, primePaye: true, reduction: true,
+        effectiveDate: true, expiryDate: true, echeanceDefinitive: true,
+        client:  { select: { firstName: true, lastName: true, companyName: true, type: true, phone: true } },
+        company: { select: { name: true, code: true } },
+      },
+    });
+
+    const maintenant = new Date();
+    const depassees = contracts.filter((c) => c.expiryDate < maintenant).length;
+
+    /* Pas de clé `data` à la racine : TransformInterceptor la déballerait
+       et perdrait `stats` au passage */
+    return {
+      provisoires: contracts,
+      stats: { count: contracts.length, depassees },
+    };
+  }
+
+  /** Remise de l'attestation définitive : l'échéance courte laisse place
+   *  à la fin réelle de la période souscrite. */
+  async remettreDefinitive(id: string, userId: string) {
+    const contract = await this.prisma.contract.findUnique({ where: { id } });
+    if (!contract) throw new NotFoundException('Production introuvable');
+    if (!contract.estProvisoire || !contract.echeanceDefinitive) {
+      throw new BadRequestException("Cette production n'est pas une attestation provisoire");
+    }
+
+    const echeance = contract.echeanceDefinitive;
+    /* La prime passe automatiquement au montant de la période complète :
+       l'encaissé n'est pas touché, le reliquat devient le reste dû du client */
+    const primeDef = contract.primeDefinitive != null ? Number(contract.primeDefinitive) : null;
+
+    const updated = await this.prisma.contract.update({
+      where: { id },
+      data: {
+        expiryDate: echeance,
+        estProvisoire: false,
+        echeanceDefinitive: null,
+        ...(primeDef != null ? { primeTTC: primeDef, primeHT: primeDef, primeDefinitive: null } : {}),
+        /* Un provisoire échu était passé Expiré par le cron : la définitive
+           couvre une période plus longue, on réactive si elle court encore */
+        ...(contract.status === 'EXPIRED' && echeance > new Date() ? { status: 'ACTIVE' } : {}),
+      },
+    });
+
+    await this.prisma.contractHistory.create({
+      data: {
+        contractId: id,
+        field: 'attestation',
+        oldValue: `provisoire (échéance ${contract.expiryDate.toISOString().slice(0, 10)}, prime ${Number(contract.primeTTC)})`,
+        newValue: `définitive (échéance ${echeance.toISOString().slice(0, 10)}${primeDef != null ? `, prime ${primeDef}` : ''})`,
+        changedBy: userId,
+      },
+    });
+
+    return updated;
+  }
+
   async generateProductionExcel(params: {
     search?: string; status?: string; type?: string; companyCode?: string; mois?: string;
   }): Promise<Buffer> {
@@ -270,9 +339,10 @@ export class ContractsService {
     const data: any = { ...dto };
     /* Les dates arrivent en "AAAA-MM-JJ" depuis le formulaire : Prisma exige
        un vrai DateTime, on convertit ce qui est présent */
-    if (data.souscriptionDate) data.souscriptionDate = new Date(data.souscriptionDate);
-    if (data.effectiveDate)    data.effectiveDate    = new Date(data.effectiveDate);
-    if (data.expiryDate)       data.expiryDate       = new Date(data.expiryDate);
+    if (data.souscriptionDate)   data.souscriptionDate   = new Date(data.souscriptionDate);
+    if (data.effectiveDate)      data.effectiveDate      = new Date(data.effectiveDate);
+    if (data.expiryDate)         data.expiryDate         = new Date(data.expiryDate);
+    if (data.echeanceDefinitive) data.echeanceDefinitive = new Date(data.echeanceDefinitive);
     /* À la création, primeHT = primeTTC (l'agent ne distingue pas les deux).
        Une correction de prime doit suivre la même règle, sinon les commissions
        resteraient calculées sur l'ancien montant. */

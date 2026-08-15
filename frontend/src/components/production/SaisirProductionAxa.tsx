@@ -73,9 +73,20 @@ const schema = z.object({
   effectiveDate:    z.string().min(1, "Date d'effet requise"),
   expiryDate:       z.string().min(1),
   notes:            z.string().optional(),
+  /* Attestation provisoire : échéance courte + prime du 1er mois au départ,
+     la période et la prime complètes s'appliquent à la remise de la définitive */
+  estProvisoire:      z.boolean().default(false),
+  echeanceProvisoire: z.string().optional(),
+  primeDefinitive:    z.coerce.number().optional(),
 }).refine(
   (d) => !SOUS_CATEGORIES[d.type] || !!d.sousCategorie,
   { message: 'Précision requise', path: ['sousCategorie'] },
+).refine(
+  (d) => !d.estProvisoire || !!d.echeanceProvisoire,
+  { message: 'Échéance provisoire requise', path: ['echeanceProvisoire'] },
+).refine(
+  (d) => !d.estProvisoire || (d.primeDefinitive ?? 0) > 0,
+  { message: 'Prime définitive requise', path: ['primeDefinitive'] },
 );
 type FormData = z.infer<typeof schema>;
 
@@ -132,6 +143,7 @@ export function SaisirProductionAxa() {
   const effectiveDate = watch('effectiveDate');
   const frequency     = watch('frequency');
   const typeChoisi    = watch('type');
+  const estProvisoire = watch('estProvisoire');
   const sousCategories = SOUS_CATEGORIES[typeChoisi] ?? null;
   const primeNette    = Math.max(0, primeTTC - reduction);
   const resteAPayer   = Math.max(0, primeNette - primePaye);
@@ -152,6 +164,13 @@ export function SaisirProductionAxa() {
 
   /* Changer de type invalide la précision (ex: "Motocycle" sur une Automobile) */
   useEffect(() => { setValue('sousCategorie', ''); }, [typeChoisi, setValue]);
+
+  /* Échéance provisoire pré-remplie à 1 mois de la date d'effet, modifiable */
+  useEffect(() => {
+    if (estProvisoire && effectiveDate) {
+      setValue('echeanceProvisoire', computeExpiryDate(effectiveDate, 'MONTHLY'));
+    }
+  }, [estProvisoire, effectiveDate, setValue]);
 
   function validateNewClient() {
     const errs: Record<string, string> = {};
@@ -190,10 +209,17 @@ export function SaisirProductionAxa() {
 
       if (!clientId) throw new Error('Client introuvable — veuillez sélectionner ou créer un client');
 
+      /* echeanceProvisoire est un champ d'écran, pas un champ de l'API */
+      const { echeanceProvisoire, ...payload } = data;
       return apiHelper.post('/contracts', {
-        ...data,
+        ...payload,
         /* Omis plutôt qu'envoyé vide : la validation refuse une chaîne vide */
         sousCategorie: data.sousCategorie || undefined,
+        /* Provisoire : l'échéance visible est la courte, la période complète
+           (échéance + prime) attend la remise de la définitive */
+        ...(data.estProvisoire
+          ? { expiryDate: echeanceProvisoire, echeanceDefinitive: data.expiryDate }
+          : { primeDefinitive: undefined }),
         clientId,
         companyId,
         primeHT:   data.primeTTC,
@@ -215,6 +241,10 @@ export function SaisirProductionAxa() {
     if (!companyId) { toast.error("Compagnie AXA introuvable — contactez l'administrateur"); return; }
     if (clientMode === 'existing' && !selectedClientId) { toast.error('Veuillez sélectionner un client'); return; }
     if (clientMode === 'new' && !validateNewClient()) return;
+    if (data.estProvisoire && data.echeanceProvisoire && data.expiryDate
+        && new Date(data.echeanceProvisoire) >= new Date(data.expiryDate)) {
+      toast.error("L'échéance provisoire doit précéder l'échéance définitive"); return;
+    }
     mutation.mutate(data);
   };
 
@@ -405,7 +435,7 @@ export function SaisirProductionAxa() {
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Primes (MAD)</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Prime TTC *</label>
+                <label className="label">{estProvisoire ? 'Prime TTC provisoire (1er mois) *' : 'Prime TTC *'}</label>
                 <div className="relative">
                   <input type="number" step="0.01" min="0" className="input pr-16" placeholder="0.00" {...register('primeTTC')} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">MAD</span>
@@ -449,6 +479,37 @@ export function SaisirProductionAxa() {
                 {FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* Attestation provisoire */}
+          <div className="card p-6 space-y-3">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" className="w-4 h-4 rounded" {...register('estProvisoire')} />
+              <span className="text-sm font-semibold text-gray-800">Attestation provisoire</span>
+            </label>
+            <p className="text-xs text-gray-400">
+              Le client repart avec une attestation courte et paie la prime du 1er mois.
+              À la remise de la définitive, l&apos;échéance et la prime de la période complète
+              s&apos;appliquent automatiquement — le reliquat devient son reste dû.
+            </p>
+            {estProvisoire && (
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="label">Échéance provisoire *</label>
+                  <input type="date" className="input" {...register('echeanceProvisoire')} />
+                  <p className="text-xs text-gray-400 mt-1">Pré-remplie à 1 mois, modifiable</p>
+                  {errors.echeanceProvisoire && <p className="text-xs text-red-500 mt-1">{errors.echeanceProvisoire.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Prime TTC définitive (période complète) *</label>
+                  <div className="relative">
+                    <input type="number" step="0.01" min="0" className="input pr-16" placeholder="0.00" {...register('primeDefinitive')} />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">MAD</span>
+                  </div>
+                  {errors.primeDefinitive && <p className="text-xs text-red-500 mt-1">{errors.primeDefinitive.message}</p>}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card p-6 space-y-4">

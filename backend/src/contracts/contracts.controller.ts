@@ -67,6 +67,12 @@ export class ContractsController {
     return this.service.getCredits(companyCode);
   }
 
+  @Get('provisoires')
+  @ApiOperation({ summary: 'Attestations provisoires en attente de la définitive' })
+  getProvisoires(@Query('companyCode') companyCode?: string) {
+    return this.service.getProvisoires(companyCode);
+  }
+
   @Get('excel')
   @ApiOperation({ summary: 'Télécharger la production (filtrée) en Excel' })
   async downloadExcel(
@@ -96,6 +102,12 @@ export class ContractsController {
   @ApiOperation({ summary: 'Annuler un contrat' })
   cancel(@Param('id') id: string, @Body('reason') reason: string, @CurrentUser('id') userId: string) {
     return this.service.cancel(id, reason, userId);
+  }
+
+  @Patch(':id/definitive')
+  @ApiOperation({ summary: "Remettre l'attestation définitive (échéance et prime complètes)" })
+  remettreDefinitive(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.service.remettreDefinitive(id, userId);
   }
 
   @Post(':id/renew')

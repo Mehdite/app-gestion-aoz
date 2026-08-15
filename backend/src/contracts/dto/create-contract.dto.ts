@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, IsBoolean, IsIn, IsPositive } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,6 +29,11 @@ export class CreateContractDto {
   @ApiPropertyOptional() @IsOptional() @IsDateString() souscriptionDate?: string;
   @ApiProperty() @IsDateString() effectiveDate: string;
   @ApiProperty() @IsDateString() expiryDate: string;
+  /* Attestation provisoire : expiryDate/primeTTC portent l'échéance courte et
+     la prime du 1er mois ; echeanceDefinitive/primeDefinitive la période complète */
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() estProvisoire?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() echeanceDefinitive?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @IsPositive() primeDefinitive?: number;
   @ApiPropertyOptional() @IsOptional() details?: any;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() autoRenew?: boolean;

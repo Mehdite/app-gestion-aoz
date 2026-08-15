@@ -61,6 +61,9 @@ export class RenewalsService {
     const where: any = {
       expiryDate: { gte: start, lt: end },
       status: { not: 'CANCELLED' },
+      /* Les attestations provisoires ont leur propre rubrique : leur échéance
+         courte appelle la remise de la définitive, pas un renouvellement */
+      estProvisoire: false,
     };
     if (companyCode) where.company = { code: companyCode };
 

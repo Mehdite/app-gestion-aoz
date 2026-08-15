@@ -220,6 +220,14 @@ model Contract {
   souscriptionDate  DateTime  @default(now())
   effectiveDate     DateTime
   expiryDate        DateTime
+  /// Attestation provisoire : expiryDate et primeTTC portent l'échéance courte
+  /// et la prime du 1er mois payées au départ ; echeanceDefinitive et
+  /// primeDefinitive gardent la fin et la prime de la période complète.
+  /// La remise de l'attestation définitive bascule les deux automatiquement,
+  /// le reliquat (primeDefinitive - encaissé) devient le reste dû du client.
+  estProvisoire     Boolean   @default(false)
+  echeanceDefinitive DateTime?
+  primeDefinitive   Decimal?
   renewedAt         DateTime?
   cancelledAt       DateTime?
 
