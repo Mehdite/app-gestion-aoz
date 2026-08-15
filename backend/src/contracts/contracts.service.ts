@@ -278,6 +278,16 @@ export class ContractsService {
        resteraient calculées sur l'ancien montant. */
     if (data.primeTTC !== undefined && data.primeHT === undefined) data.primeHT = data.primeTTC;
 
+    /* Le statut Actif/Expiré découle de l'échéance : le cron expire les
+       contrats dépassés, mais rien ne faisait le chemin inverse. Prolonger
+       l'échéance d'un contrat expiré doit le réactiver — et inversement.
+       On ne touche jamais à CANCELLED/SUSPENDED, qui sont des décisions. */
+    if (data.expiryDate !== undefined && data.status === undefined) {
+      const maintenant = new Date();
+      if (existing.status === 'EXPIRED' && data.expiryDate > maintenant) data.status = 'ACTIVE';
+      if (existing.status === 'ACTIVE'  && data.expiryDate < maintenant) data.status = 'EXPIRED';
+    }
+
     const contract = await this.prisma.contract.update({ where: { id }, data });
     const changes = Object.entries(dto).map(([field, newValue]) => ({
       contractId: id, field,
