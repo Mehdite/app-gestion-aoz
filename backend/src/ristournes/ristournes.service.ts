@@ -29,6 +29,16 @@ export class RistournesService {
       data: { status: 'CANCELLED', cancelledAt: new Date(dto.dateEffet) },
     });
 
+    /* Le remboursement sort du tiroir-caisse */
+    this.prisma.mouvementCaisse.create({
+      data: {
+        sens: 'SORTIE', source: 'RISTOURNE',
+        montant: dto.montant,
+        libelle: `Ristourne ${contract.contractNumber}`,
+        contractId: dto.contractId, refId: ristourne.id, createdBy: userId,
+      },
+    }).catch(() => {});
+
     return ristourne;
   }
 
@@ -91,6 +101,9 @@ export class RistournesService {
       where: { id: ristourne.contractId },
       data: { status: 'ACTIVE', cancelledAt: null },
     });
+
+    /* La sortie de caisse liée disparaît avec elle */
+    await this.prisma.mouvementCaisse.deleteMany({ where: { refId: id } });
 
     return this.prisma.ristourne.delete({ where: { id } });
   }

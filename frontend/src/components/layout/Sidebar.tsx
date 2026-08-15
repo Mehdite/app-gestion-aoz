@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard, Users, UserSearch, FileCheck,
   AlertTriangle, BarChart3, Settings, LogOut, Users2, X, RefreshCw,
-  Receipt, Landmark, Wallet, Hourglass,
+  Receipt, Landmark, Wallet, Hourglass, Coins,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +21,7 @@ const navItems = [
   { label: 'Provisoires',            href: '/provisoires',           icon: Hourglass,       key: 'provisoires' },
   { label: 'Ristournes',             href: '/ristournes',            icon: Receipt,         key: 'ristournes' },
   { label: 'Versements',             href: '/versements',            icon: Landmark,        key: 'versements' },
+  { label: 'Caisse',                 href: '/caisse',                icon: Coins,           key: 'caisse' },
   { label: 'Charges',                href: '/charges',               icon: Wallet,          key: 'charges' },
   { label: 'Sinistres',              href: '/sinistres',             icon: AlertTriangle,   key: 'sinistres' },
   { label: 'Rapports',               href: '/rapports',              icon: BarChart3,       key: 'rapports' },

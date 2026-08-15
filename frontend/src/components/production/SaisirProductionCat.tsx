@@ -56,6 +56,8 @@ const schema = z.object({
   estProvisoire:      z.boolean().default(false),
   echeanceProvisoire: z.string().optional(),
   primeDefinitive:    z.coerce.number().optional(),
+  /* ESPECES alimente la caisse du jour ; CHEQUE et VIREMENT n'y entrent pas */
+  modePaiement:       z.string().default('ESPECES'),
 }).refine(
   (d) => !d.estProvisoire || !!d.echeanceProvisoire,
   { message: 'Échéance provisoire requise', path: ['echeanceProvisoire'] },
@@ -109,7 +111,7 @@ export function SaisirProductionCat() {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { frequency: 'ANNUAL', reduction: 0, primePaye: 0, souscriptionDate: aujourdhui() },
+    defaultValues: { frequency: 'ANNUAL', reduction: 0, primePaye: 0, souscriptionDate: aujourdhui(), modePaiement: 'ESPECES' },
   });
 
   const primeTTC      = Number(watch('primeTTC'))  || 0;
@@ -427,6 +429,15 @@ export function SaisirProductionCat() {
                 <div className="text-center"><p className="text-xs text-gray-400 mb-0.5">Reste</p><p className={cn('font-semibold text-sm', resteAPayer > 0 ? 'text-red-600' : 'text-green-600')}>{fmt(resteAPayer)}</p></div>
               </div>
             )}
+            <div>
+              <label className="label">Mode d&apos;encaissement</label>
+              <select className="input w-56" {...register('modePaiement')}>
+                <option value="ESPECES">Espèces (entre en caisse)</option>
+                <option value="CHEQUE">Chèque</option>
+                <option value="VIREMENT">Virement</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Seules les espèces alimentent la caisse du jour</p>
+            </div>
             <div>
               <label className="label">Fréquence de paiement</label>
               <select className="input w-48" {...register('frequency')}>

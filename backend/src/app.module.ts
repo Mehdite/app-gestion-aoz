@@ -23,6 +23,7 @@ import { QuittancesModule } from './quittances/quittances.module';
 import { RistournesModule } from './ristournes/ristournes.module';
 import { VersementsModule } from './versements/versements.module';
 import { ChargesModule } from './charges/charges.module';
+import { CaisseModule } from './caisse/caisse.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ChargesModule } from './charges/charges.module';
     RistournesModule,
     VersementsModule,
     ChargesModule,
+    CaisseModule,
   ],
 })
 export class AppModule {}

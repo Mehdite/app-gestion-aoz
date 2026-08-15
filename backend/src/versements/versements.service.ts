@@ -7,7 +7,7 @@ export class VersementsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateVersementDto, userId: string) {
-    return this.prisma.versement.create({
+    const versement = await this.prisma.versement.create({
       data: {
         type:      dto.type,
         montant:   dto.montant,
@@ -18,6 +18,21 @@ export class VersementsService {
         createdBy: userId,
       },
     });
+
+    /* Un VERSEMENT est un dépôt d'espèces : le tiroir se vide d'autant.
+       Un VIREMENT arrive directement en banque, la caisse n'est pas touchée. */
+    if (dto.type === 'VERSEMENT') {
+      this.prisma.mouvementCaisse.create({
+        data: {
+          sens: 'SORTIE', source: 'VERSEMENT_BANQUE',
+          montant: dto.montant,
+          libelle: `Versement banque${dto.banque ? ` ${dto.banque}` : ''}${dto.reference ? ` (réf. ${dto.reference})` : ''}`,
+          refId: versement.id, createdBy: userId,
+        },
+      }).catch(() => {});
+    }
+
+    return versement;
   }
 
   async findAll(params: { annee?: string; type?: string }) {
@@ -79,6 +94,8 @@ export class VersementsService {
   async remove(id: string) {
     const versement = await this.prisma.versement.findUnique({ where: { id } });
     if (!versement) throw new NotFoundException('Versement introuvable');
+    /* La sortie de caisse liée disparaît avec lui */
+    await this.prisma.mouvementCaisse.deleteMany({ where: { refId: id } });
     return this.prisma.versement.delete({ where: { id } });
   }
 }

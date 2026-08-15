@@ -34,6 +34,8 @@ export class CreateContractDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean() estProvisoire?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsDateString() echeanceDefinitive?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @IsPositive() primeDefinitive?: number;
+  /* ESPECES alimente le journal de caisse ; CHEQUE et VIREMENT n'y entrent pas */
+  @ApiPropertyOptional() @IsOptional() @IsString() @IsIn(['ESPECES', 'CHEQUE', 'VIREMENT']) modePaiement?: string;
   @ApiPropertyOptional() @IsOptional() details?: any;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() autoRenew?: boolean;

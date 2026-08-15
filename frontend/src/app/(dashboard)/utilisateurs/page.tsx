@@ -20,6 +20,7 @@ const ALL_MODULES = [
   { key: 'provisoires',           label: 'Attestations provisoires' },
   { key: 'ristournes',            label: 'Ristournes' },
   { key: 'versements',            label: 'Versements' },
+  { key: 'caisse',                label: 'Caisse' },
   { key: 'charges',               label: 'Charges' },
   { key: 'sinistres',             label: 'Sinistres' },
   { key: 'rapports',              label: 'Rapports' },

@@ -38,6 +38,21 @@ export class ContractsService {
       this.createRenewalAlerts(contract.id, new Date(dto.expiryDate)).catch(() => {});
       this.createCommission(contract).catch(() => {});
 
+      /* Encaissement en espèces à la souscription -> entrée dans le tiroir */
+      if (Number(contract.primePaye) > 0 && contract.modePaiement === 'ESPECES') {
+        const nomClient = contract.client.firstName
+          ? `${contract.client.firstName} ${contract.client.lastName ?? ''}`.trim()
+          : contract.client.companyName ?? '';
+        this.prisma.mouvementCaisse.create({
+          data: {
+            sens: 'ENTREE', source: 'ENCAISSEMENT',
+            montant: contract.primePaye,
+            libelle: `Encaissement ${contract.contractNumber} — ${nomClient}`,
+            contractId: contract.id, createdBy: agentId,
+          },
+        }).catch(() => {});
+      }
+
       return contract;
     } catch (err: any) {
       const detail = err?.meta?.cause ?? err?.message ?? 'Erreur Prisma inconnue';
@@ -359,6 +374,30 @@ export class ContractsService {
     }
 
     const contract = await this.prisma.contract.update({ where: { id }, data });
+
+    /* Variation de l'encaissé en espèces -> mouvement de caisse.
+       Une baisse est une correction de saisie : sortie pour garder le solde juste. */
+    if (data.primePaye !== undefined) {
+      const delta = Number(data.primePaye) - Number(existing.primePaye);
+      const mode = (data.modePaiement ?? existing.modePaiement) as string;
+      if (delta !== 0 && mode === 'ESPECES') {
+        const nomClient = (existing as any).client?.firstName
+          ? `${(existing as any).client.firstName} ${(existing as any).client.lastName ?? ''}`.trim()
+          : (existing as any).client?.companyName ?? '';
+        this.prisma.mouvementCaisse.create({
+          data: {
+            sens: delta > 0 ? 'ENTREE' : 'SORTIE',
+            source: delta > 0 ? 'ENCAISSEMENT' : 'CORRECTION',
+            montant: Math.abs(delta),
+            libelle: delta > 0
+              ? `Encaissement ${contract.contractNumber} — ${nomClient}`
+              : `Correction encaissement ${contract.contractNumber} — ${nomClient}`,
+            contractId: id, createdBy: changedBy,
+          },
+        }).catch(() => {});
+      }
+    }
+
     const changes = Object.entries(dto).map(([field, newValue]) => ({
       contractId: id, field,
       oldValue: String((existing as any)[field] ?? ''),
@@ -388,6 +427,7 @@ export class ContractsService {
     if (claimIds.length > 0) await this.prisma.document.deleteMany({ where: { claimId: { in: claimIds } } });
     await this.prisma.document.deleteMany({ where: { contractId: { in: contractIds } } });
     await this.prisma.claim.deleteMany({ where: { contractId: { in: contractIds } } });
+    await this.prisma.mouvementCaisse.deleteMany({ where: { contractId: { in: contractIds } } });
     await this.prisma.renewalAlert.deleteMany({ where: { contractId: { in: contractIds } } });
     await this.prisma.contractHistory.deleteMany({ where: { contractId: { in: contractIds } } });
     await this.prisma.commission.deleteMany({ where: { contractId: { in: contractIds } } });

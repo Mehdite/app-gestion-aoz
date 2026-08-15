@@ -212,6 +212,9 @@ model Contract {
   taxes             Decimal
   reduction         Decimal   @default(0)
   primePaye         Decimal   @default(0)
+  /// Mode d'encaissement de la prime : ESPECES alimente la caisse,
+  /// CHEQUE et VIREMENT n'entrent jamais dans le tiroir
+  modePaiement      String    @default("ESPECES")
   frequency         String    @default("ANNUAL")  // MONTHLY | QUARTERLY | SEMI_ANNUAL | ANNUAL
 
   /// Date de souscription : classement de la production ET rattachement du CA
@@ -591,6 +594,44 @@ model Versement {
   @@index([date])
   @@index([type])
   @@map("versements")
+}
+
+/// Journal du tiroir-caisse : une ligne par mouvement d'espèces, alimentée
+/// automatiquement (encaissement espèces, versement banque, ristourne).
+model MouvementCaisse {
+  id         String   @id @default(cuid())
+  sens       String   // ENTREE | SORTIE
+  source     String   // ENCAISSEMENT | VERSEMENT_BANQUE | RISTOURNE | CORRECTION
+  montant    Decimal
+  libelle    String
+  contractId String?  // production concernée le cas échéant
+  refId      String?  // id de l'enregistrement source (ristourne, versement) pour le nettoyage
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([contractId])
+  @@index([refId])
+  @@map("mouvements_caisse")
+}
+
+/// Arrêté de caisse : la clôture d'une journée. Le solde d'ouverture du
+/// lendemain repart des espèces réellement comptées, pas du théorique.
+model CaisseCloture {
+  id              String   @id @default(cuid())
+  date            String   @unique // "2026-08-15"
+  soldeOuverture  Decimal
+  totalEntrees    Decimal
+  totalSorties    Decimal
+  soldeTheorique  Decimal
+  especesComptees Decimal
+  ecart           Decimal
+  notes           String?
+  closedBy        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("caisse_clotures")
 }
 
 /// Charges d'exploitation de l'agence, par mois.

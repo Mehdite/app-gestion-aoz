@@ -29,6 +29,7 @@ type EditState = {
   souscriptionDate: string;
   effectiveDate: string;
   expiryDate: string;
+  modePaiement: string;
   notes: string;
   /* Le client, pour corriger une faute de frappe sans quitter la liste */
   clientId: string;
@@ -108,6 +109,7 @@ export function ProductionPage({ companyCode, title }: Props) {
         souscriptionDate: e.souscriptionDate,
         effectiveDate:    e.effectiveDate,
         expiryDate:       e.expiryDate,
+        modePaiement:     e.modePaiement,
         notes:            e.notes || undefined,
       });
     },
@@ -215,6 +217,7 @@ export function ProductionPage({ companyCode, title }: Props) {
       souscriptionDate: String(c.souscriptionDate ?? c.createdAt ?? '').slice(0, 10),
       effectiveDate:  String(c.effectiveDate ?? '').slice(0, 10),
       expiryDate:     String(c.expiryDate ?? '').slice(0, 10),
+      modePaiement:   c.modePaiement ?? 'ESPECES',
       notes:          c.notes ?? '',
       clientId:       c.client?.id ?? '',
       clientType:     c.client?.type ?? 'INDIVIDUAL',
@@ -575,6 +578,18 @@ export function ProductionPage({ companyCode, title }: Props) {
                                     value={editing.primePaye}
                                     onChange={e => setEditing(p => p && ({ ...p, primePaye: parseFloat(e.target.value) || 0 }))}
                                   />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600 font-medium mb-1 block">Mode d&apos;encaissement</label>
+                                  <select
+                                    className="input w-40 text-sm"
+                                    value={editing.modePaiement}
+                                    onChange={e => setEditing(p => p && ({ ...p, modePaiement: e.target.value }))}
+                                  >
+                                    <option value="ESPECES">Espèces</option>
+                                    <option value="CHEQUE">Chèque</option>
+                                    <option value="VIREMENT">Virement</option>
+                                  </select>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">Reste client</p>
