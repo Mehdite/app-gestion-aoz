@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloturerCaisseDto } from './dto/cloturer-caisse.dto';
+import { DepenseCaisseDto } from './dto/depense-caisse.dto';
 import PDFDocument = require('pdfkit');
 
 /* Montant sans toLocaleString : le séparateur insécable étroit du format
@@ -70,6 +71,32 @@ export class CaisseService {
     });
   }
 
+  /** Dépense payée depuis le tiroir (fournitures, courses...) : sortie
+   *  manuelle, pour que chaque sortie de fonds soit justifiée avant clôture */
+  async ajouterDepense(dto: DepenseCaisseDto, userId: string) {
+    return this.prisma.mouvementCaisse.create({
+      data: {
+        sens: 'SORTIE', source: 'DEPENSE',
+        montant: dto.montant,
+        libelle: dto.libelle.trim(),
+        createdBy: userId,
+      },
+    });
+  }
+
+  /** Seules les dépenses manuelles se suppriment ici : les mouvements
+   *  automatiques suivent leur pièce d'origine (production, versement...) */
+  async supprimerDepense(id: string) {
+    const mouvement = await this.prisma.mouvementCaisse.findUnique({ where: { id } });
+    if (!mouvement) throw new NotFoundException('Mouvement introuvable');
+    if (mouvement.source !== 'DEPENSE') {
+      throw new BadRequestException(
+        'Ce mouvement est automatique — il se supprime en supprimant son opération d\'origine',
+      );
+    }
+    return this.prisma.mouvementCaisse.delete({ where: { id } });
+  }
+
   /** Arrêté de caisse journalier — document à imprimer et signer */
   async genererArretePdf(date?: string): Promise<Buffer> {
     const j = await this.getJournee(date);
@@ -136,7 +163,7 @@ export class CaisseService {
     };
 
     tableau('ENTRÉES — encaissements en espèces', j.mouvements.filter((m) => m.sens === 'ENTREE'), j.totalEntrees);
-    tableau('SORTIES — versements banque, ristournes, corrections', j.mouvements.filter((m) => m.sens === 'SORTIE'), j.totalSorties);
+    tableau('SORTIES — versements banque, ristournes, dépenses, corrections', j.mouvements.filter((m) => m.sens === 'SORTIE'), j.totalSorties);
 
     /* ── Synthèse ── */
     doc.moveTo(50, doc.y).lineTo(50 + largeur, doc.y).lineWidth(1).strokeColor(NAVY).stroke();

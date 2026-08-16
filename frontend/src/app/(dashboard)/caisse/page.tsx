@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { cn, formatCurrency } from '@/lib/utils';
 import {
   Coins, ArrowDownCircle, ArrowUpCircle, Scale, CheckCircle2,
-  AlertTriangle, FileDown, Lock, Pencil,
+  AlertTriangle, FileDown, Lock, Pencil, Plus, Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,7 @@ const SOURCE_LABELS: Record<string, string> = {
   VERSEMENT_BANQUE: 'Versement banque',
   RISTOURNE:        'Ristourne',
   CORRECTION:       'Correction',
+  DEPENSE:          'Dépense',
 };
 
 const aujourdhui = () => new Date().toISOString().split('T')[0];
@@ -30,6 +31,9 @@ export default function CaissePage() {
   const [notes, setNotes] = useState('');
   const [editionCloture, setEditionCloture] = useState(false);
   const [telechargement, setTelechargement] = useState(false);
+  const [formDepense, setFormDepense] = useState(false);
+  const [depLibelle, setDepLibelle] = useState('');
+  const [depMontant, setDepMontant] = useState('');
 
   const queryKey = ['caisse', { date }];
 
@@ -56,6 +60,31 @@ export default function CaissePage() {
     onError: (e: any) => {
       const msg = e?.response?.data?.message;
       toast.error(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Erreur lors de la clôture'));
+    },
+  });
+
+  const depenseMut = useMutation({
+    mutationFn: () => apiHelper.post('/caisse/depense', {
+      libelle: depLibelle.trim(),
+      montant: Number(depMontant),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['caisse'] });
+      setDepLibelle(''); setDepMontant('');
+      toast.success('Dépense enregistrée — sortie de caisse ajoutée');
+    },
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Erreur'));
+    },
+  });
+
+  const supprDepenseMut = useMutation({
+    mutationFn: (id: string) => apiHelper.delete(`/caisse/depense/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['caisse'] }); toast.success('Dépense supprimée'); },
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Erreur'));
     },
   });
 
@@ -105,16 +134,68 @@ export default function CaissePage() {
             value={date}
             onChange={(e) => { setDate(e.target.value); setEditionCloture(false); }}
           />
-          <button
-            onClick={telechargerArrete}
-            disabled={telechargement || isLoading}
-            className="btn-secondary flex items-center gap-2"
-            title="Arrêté de caisse à imprimer et faire signer"
-          >
-            <FileDown className="w-4 h-4" />
-            {telechargement ? 'Génération...' : "Télécharger l'arrêté (PDF)"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFormDepense((v) => !v)}
+              className="btn-primary flex items-center gap-2"
+              title="Sortie d'espèces payée depuis le tiroir"
+            >
+              <Plus className="w-4 h-4" />
+              {formDepense ? 'Masquer' : 'Ajouter une dépense'}
+            </button>
+            <button
+              onClick={telechargerArrete}
+              disabled={telechargement || isLoading}
+              className="btn-secondary flex items-center gap-2"
+              title="Arrêté de caisse à imprimer et faire signer"
+            >
+              <FileDown className="w-4 h-4" />
+              {telechargement ? 'Génération...' : "Télécharger l'arrêté (PDF)"}
+            </button>
+          </div>
         </div>
+
+        {/* Dépense depuis le tiroir */}
+        {formDepense && (
+          <div className="card p-5">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Nouvelle dépense — sortie d&apos;espèces</h2>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex-1 min-w-52">
+                <label className="label">Libellé *</label>
+                <input
+                  type="text" className="input w-full" placeholder="Ex: Fournitures bureau, timbres..."
+                  value={depLibelle}
+                  onChange={(e) => setDepLibelle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Montant *</label>
+                <div className="relative">
+                  <input
+                    type="number" step="0.01" min="0" className="input w-40 pr-14" placeholder="0.00"
+                    value={depMontant}
+                    onChange={(e) => setDepMontant(e.target.value)}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">MAD</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (depLibelle.trim().length < 2) { toast.error('Libellé requis'); return; }
+                  if (!(Number(depMontant) > 0)) { toast.error('Montant requis'); return; }
+                  depenseMut.mutate();
+                }}
+                disabled={depenseMut.isPending}
+                className="btn-primary"
+              >
+                {depenseMut.isPending ? 'Ajout...' : 'Enregistrer la dépense'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">
+              La dépense sort immédiatement du solde théorique et figure sur l&apos;arrêté de caisse du jour.
+            </p>
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -251,16 +332,17 @@ export default function CaissePage() {
                   <th className="table-header-cell">Source</th>
                   <th className="table-header-cell">Entrée</th>
                   <th className="table-header-cell">Sortie</th>
+                  <th className="table-header-cell w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {isLoading && [...Array(4)].map((_, i) => (
-                  <tr key={i}>{[...Array(5)].map((_, k) => (
+                  <tr key={i}>{[...Array(6)].map((_, k) => (
                     <td key={k} className="table-cell"><div className="animate-pulse bg-gray-100 rounded h-4 w-16" /></td>
                   ))}</tr>
                 ))}
                 {!isLoading && mouvements.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm">
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">
                     Aucun mouvement d&apos;espèces ce jour
                   </td></tr>
                 )}
@@ -285,6 +367,21 @@ export default function CaissePage() {
                       {m.sens === 'SORTIE'
                         ? <span className="text-sm font-semibold text-red-600 tabular-nums">− {formatCurrency(m.montant)}</span>
                         : <span className="text-gray-300 text-sm">—</span>}
+                    </td>
+                    <td className="table-cell">
+                      {m.source === 'DEPENSE' && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Supprimer la dépense « ' + m.libelle + ' » ?'))
+                              supprDepenseMut.mutate(m.id);
+                          }}
+                          disabled={supprDepenseMut.isPending}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 disabled:opacity-50"
+                          title="Supprimer cette dépense"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CaisseService } from './caisse.service';
 import { CloturerCaisseDto } from './dto/cloturer-caisse.dto';
+import { DepenseCaisseDto } from './dto/depense-caisse.dto';
 
 @ApiTags('caisse')
 @ApiBearerAuth()
@@ -23,6 +24,18 @@ export class CaisseController {
   @ApiOperation({ summary: 'Clôturer la journée avec les espèces comptées' })
   cloturer(@Body() dto: CloturerCaisseDto, @CurrentUser('id') userId: string) {
     return this.service.cloturer(dto, userId);
+  }
+
+  @Post('depense')
+  @ApiOperation({ summary: 'Dépense payée depuis le tiroir-caisse' })
+  ajouterDepense(@Body() dto: DepenseCaisseDto, @CurrentUser('id') userId: string) {
+    return this.service.ajouterDepense(dto, userId);
+  }
+
+  @Delete('depense/:id')
+  @ApiOperation({ summary: 'Supprimer une dépense manuelle (les mouvements automatiques sont protégés)' })
+  supprimerDepense(@Param('id') id: string) {
+    return this.service.supprimerDepense(id);
   }
 
   @Get('pdf')
